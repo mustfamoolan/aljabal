@@ -16,10 +16,10 @@ class AdminUserSeeder extends Seeder
     {
         // Create default admin user
         $admin = User::firstOrCreate(
-            ['phone' => '07742209251'],
+            ['phone' => '07709078728'],
             [
                 'name' => 'مدير النظام',
-                'password' => Hash::make('12345678'),
+                'password' => Hash::make('07709078728'),
                 'type' => UserType::ADMIN,
                 'is_active' => true,
             ]
@@ -31,7 +31,7 @@ class AdminUserSeeder extends Seeder
         }
 
         $this->command->info('تم إنشاء مستخدم المدير بنجاح');
-        $this->command->info('رقم الهاتف: 07742209251');
-        $this->command->info('كلمة المرور: 12345678');
+        $this->command->info('رقم الهاتف: 07709078728');
+        $this->command->info('كلمة المرور: 07709078728');
     }
 }
