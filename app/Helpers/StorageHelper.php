@@ -13,7 +13,7 @@ class StorageHelper
      * @param string $path The storage path relative to storage/app/public
      * @return string|null The URL to access the file
      */
-    public static function url(string $path): ?string
+    public static function url($path)
     {
         if (empty($path)) {
             return null;
@@ -42,7 +42,7 @@ class StorageHelper
      * @param string $path The storage path relative to storage/app/public
      * @return string|null The URL to access the file
      */
-    public static function storageUrl(string $path): ?string
+    public static function storageUrl($path)
     {
         return self::url($path);
     }
