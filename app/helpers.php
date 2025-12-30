@@ -8,8 +8,11 @@ if (!function_exists('storage_url')) {
      * @param string $path The storage path relative to storage/app/public
      * @return string|null The URL to access the file
      */
-    function storage_url(string $path): ?string
+    function storage_url($path)
     {
+        if (empty($path)) {
+            return null;
+        }
         return \App\Helpers\StorageHelper::url($path);
     }
 }
