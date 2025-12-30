@@ -60,7 +60,7 @@ class ProductController extends Controller
                     'wholesale_price' => $recProduct->wholesale_price,
                     'quantity' => $recProduct->quantity,
                     'image' => $firstImage 
-                        ? asset('storage/' . $firstImage->image_path) 
+                        ? storage_url($firstImage->image_path) 
                         : null,
                     'category' => $recProduct->category?->name,
                     'subcategory' => $recProduct->subcategory?->name,

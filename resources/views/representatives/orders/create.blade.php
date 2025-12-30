@@ -66,7 +66,7 @@
         <div class="col-md-6 col-xl-3 mb-4" data-product-id="{{ $product->id }}">
             <div class="card h-100 product-card position-relative">
                 @if($product->images->isNotEmpty())
-                    <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->name }}" class="img-fluid" style="height: 250px; object-fit: cover;">
+                    <img src="{{ storage_url($product->images->first()->image_path) }}" alt="{{ $product->name }}" class="img-fluid" style="height: 250px; object-fit: cover;">
                 @else
                     <div class="bg-light-subtle d-flex align-items-center justify-content-center" style="height: 250px;">
                         <iconify-icon icon="solar:box-bold-duotone" class="fs-48 text-muted"></iconify-icon>

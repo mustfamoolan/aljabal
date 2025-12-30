@@ -69,7 +69,8 @@ class Representative extends Authenticatable
         if (!$this->image) {
             return null;
         }
-        return asset('storage/' . $this->image);
+        
+        return storage_url($this->image);
     }
 
     /**

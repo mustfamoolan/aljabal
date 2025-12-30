@@ -12,7 +12,7 @@
                 <div class="row">
                     <div class="col-lg-12 text-center mb-4">
                         @if($representative->image)
-                            <img src="{{ asset('storage/' . $representative->image) }}" alt="{{ $representative->name }}" class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
+                            <img src="{{ storage_url($representative->image) }}" alt="{{ $representative->name }}" class="img-thumbnail rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
                         @else
                             <div class="avatar-lg d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle fw-bold mx-auto" style="width: 150px; height: 150px;">
                                 <span style="font-size: 48px;">{{ strtoupper(substr($representative->name, 0, 1)) }}</span>

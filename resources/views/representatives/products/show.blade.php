@@ -27,7 +27,7 @@
                         <div class="carousel-inner">
                             @foreach($product->images as $index => $image)
                                 <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
-                                    <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                    <img src="{{ storage_url($image->image_path) }}" 
                                          alt="{{ $product->name }}" 
                                          class="d-block w-100 rounded" 
                                          style="max-height: 500px; object-fit: contain;">
@@ -48,7 +48,7 @@
                     @if($product->images->count() > 1)
                         <div class="d-flex gap-2 mt-3 overflow-auto">
                             @foreach($product->images as $index => $image)
-                                <img src="{{ asset('storage/' . $image->image_path) }}" 
+                                <img src="{{ storage_url($image->image_path) }}" 
                                      alt="Thumbnail {{ $index + 1 }}"
                                      class="img-thumbnail cursor-pointer" 
                                      style="width: 80px; height: 80px; object-fit: cover;"
@@ -234,7 +234,7 @@
                             <div class="card h-100 product-card">
                                 @if($recommended->images->isNotEmpty())
                                     <a href="{{ route('representative.products.show', $recommended) }}">
-                                        <img src="{{ asset('storage/' . $recommended->images->first()->image_path) }}" 
+                                        <img src="{{ storage_url($recommended->images->first()->image_path) }}" 
                                              alt="{{ $recommended->name }}" 
                                              class="card-img-top" 
                                              style="height: 200px; object-fit: cover;">

@@ -108,7 +108,7 @@
                                 </td>
                                 <td>
                                     @if($representative->image)
-                                        <img src="{{ asset('storage/' . $representative->image) }}" alt="{{ $representative->name }}" class="avatar-sm rounded-circle">
+                                        <img src="{{ storage_url($representative->image) }}" alt="{{ $representative->name }}" class="avatar-sm rounded-circle">
                                     @else
                                         <div class="avatar-sm d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle fw-bold">
                                             {{ strtoupper(substr($representative->name, 0, 1)) }}

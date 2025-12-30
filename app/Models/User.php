@@ -124,19 +124,6 @@ class User extends Authenticatable
             return null;
         }
         
-        // Check if symbolic link exists
-        $publicPath = public_path('storage/' . $this->image);
-        if (file_exists($publicPath) || is_link(public_path('storage'))) {
-            // Use standard asset() if symbolic link exists
-            return asset('storage/' . $this->image);
-        }
-        
-        // Otherwise, use route to serve file directly from storage
-        $storagePath = storage_path('app/public/' . $this->image);
-        if (file_exists($storagePath)) {
-            return route('storage.file', ['path' => $this->image]);
-        }
-        
-        return null;
+        return storage_url($this->image);
     }
 }

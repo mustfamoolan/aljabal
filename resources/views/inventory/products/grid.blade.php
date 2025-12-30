@@ -132,7 +132,7 @@
             <div class="col-md-6 col-xl-3">
                 <div class="card">
                     @if($product->images->isNotEmpty())
-                        <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->name }}" class="img-fluid">
+                        <img src="{{ storage_url($product->images->first()->image_path) }}" alt="{{ $product->name }}" class="img-fluid">
                     @else
                         <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
                             <iconify-icon icon="solar:box-bold-duotone" class="fs-48 text-muted"></iconify-icon>

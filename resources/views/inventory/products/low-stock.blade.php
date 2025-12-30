@@ -63,7 +63,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="rounded bg-light avatar-md d-flex align-items-center justify-content-center">
                                             @if($product->images->isNotEmpty())
-                                                <img src="{{ asset('storage/' . $product->images->first()->image_path) }}" alt="{{ $product->name }}" class="avatar-md">
+                                                <img src="{{ storage_url($product->images->first()->image_path) }}" alt="{{ $product->name }}" class="avatar-md">
                                             @else
                                                 <iconify-icon icon="solar:box-bold-duotone" class="fs-20 text-muted"></iconify-icon>
                                             @endif

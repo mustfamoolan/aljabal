@@ -12,7 +12,7 @@
                         <div class="carousel-inner" role="listbox">
                             @foreach($product->images as $index => $image)
                                 <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
-                                    <img src="{{ asset('storage/' . $image->image_path) }}" alt="{{ $product->name }}" class="img-fluid bg-light rounded">
+                                    <img src="{{ storage_url($image->image_path) }}" alt="{{ $product->name }}" class="img-fluid bg-light rounded">
                                 </div>
                             @endforeach
                         </div>
@@ -32,7 +32,7 @@
                             <button type="button" data-bs-target="#carouselExampleFade" data-bs-slide-to="{{ $index }}"
                                     aria-label="Slide {{ $index + 1 }}"
                                     class="w-auto h-auto rounded bg-light {{ $index === 0 ? 'active' : '' }}">
-                                <img src="{{ asset('storage/' . $image->image_path) }}" class="d-block avatar-xl" alt="swiper-indicator-img">
+                                <img src="{{ storage_url($image->image_path) }}" class="d-block avatar-xl" alt="swiper-indicator-img">
                             </button>
                         @endforeach
                     </div>

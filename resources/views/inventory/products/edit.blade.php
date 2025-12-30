@@ -425,7 +425,7 @@
                                 @foreach($product->images as $image)
                                     <div class="col-3">
                                         <div class="position-relative">
-                                            <img src="{{ asset('storage/' . $image->image_path) }}" class="img-fluid rounded" alt="Image {{ $image->image_order }}">
+                                            <img src="{{ storage_url($image->image_path) }}" class="img-fluid rounded" alt="Image {{ $image->image_order }}">
                                             <small class="d-block text-center mt-1">صورة {{ $image->image_order }}</small>
                                         </div>
                                     </div>

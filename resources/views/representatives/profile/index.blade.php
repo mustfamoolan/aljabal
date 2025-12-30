@@ -11,7 +11,7 @@
                     <div class="row">
                         <div class="col-md-4 text-center">
                             @if($representative->image)
-                                <img src="{{ asset('storage/' . $representative->image) }}" alt="{{ $representative->name }}" 
+                                <img src="{{ storage_url($representative->image) }}" alt="{{ $representative->name }}" 
                                      class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
                             @else
                                 <div class="avatar-lg mx-auto mb-3 bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">

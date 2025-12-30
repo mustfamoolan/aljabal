@@ -60,7 +60,7 @@ class ProductResource extends JsonResource
                 return $this->images->map(function ($image) {
                     return [
                         'id' => $image->id,
-                        'url' => asset('storage/' . $image->image_path),
+                        'url' => storage_url($image->image_path),
                         'order' => $image->image_order,
                     ];
                 });

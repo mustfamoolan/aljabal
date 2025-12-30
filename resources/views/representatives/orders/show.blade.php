@@ -62,7 +62,7 @@
                                     <td>
                                         <div class="d-flex align-items-center gap-3">
                                             @if($item->product && $item->product->images && $item->product->images->count() > 0)
-                                                <img src="{{ asset('storage/' . $item->product->images->first()->image_path) }}"
+                                                <img src="{{ storage_url($item->product->images->first()->image_path) }}"
                                                      alt="{{ $item->product->name ?? 'منتج' }}"
                                                      class="rounded"
                                                      style="width: 60px; height: 60px; object-fit: cover; border: 1px solid #dee2e6;">
@@ -101,7 +101,7 @@
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-start gap-3 mb-3">
                                     @if($item->product && $item->product->images && $item->product->images->count() > 0)
-                                        <img src="{{ asset('storage/' . $item->product->images->first()->image_path) }}"
+                                        <img src="{{ storage_url($item->product->images->first()->image_path) }}"
                                              alt="{{ $item->product->name ?? 'منتج' }}"
                                              class="rounded"
                                              style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #dee2e6; flex-shrink: 0;">

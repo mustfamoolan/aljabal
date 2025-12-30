@@ -80,7 +80,7 @@
                        aria-haspopup="true" aria-expanded="false">
                               <span class="d-flex align-items-center">
                                   @if($representative->image)
-                                      <img class="rounded-circle" width="32" src="{{ asset('storage/' . $representative->image) }}"
+                                      <img class="rounded-circle" width="32" src="{{ storage_url($representative->image) }}"
                                            alt="{{ $representative->name }}">
                                   @else
                                       <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
