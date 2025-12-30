@@ -5,7 +5,9 @@ namespace App\Services\Admin;
 use App\Enums\UserType;
 use App\Models\EmployeeType;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class UserService
 {
@@ -63,6 +65,12 @@ class UserService
 
         $user = User::create($userData);
 
+        // Upload image if provided
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            $imagePath = $this->uploadImage($user, $data['image']);
+            $user->update(['image' => $imagePath]);
+        }
+
         // Assign roles from employee type if applicable
         if (isset($userData['employee_type_id'])) {
             $employeeType = EmployeeType::with('roles')->find($userData['employee_type_id']);
@@ -117,6 +125,15 @@ class UserService
 
         if (isset($data['is_active'])) {
             $updateData['is_active'] = $data['is_active'];
+        }
+
+        // Handle image upload
+        if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
+            // Delete old image if exists
+            if ($user->image) {
+                Storage::disk('public')->delete($user->image);
+            }
+            $updateData['image'] = $this->uploadImage($user, $data['image']);
         }
 
         $oldEmployeeTypeId = $user->employee_type_id;
@@ -175,5 +192,14 @@ class UserService
     public function revokePermission(User $user, string $permissionName): void
     {
         $user->revokePermissionTo($permissionName);
+    }
+
+    /**
+     * Upload image for user
+     */
+    private function uploadImage(User $user, UploadedFile $image): string
+    {
+        $uploadPath = "users/{$user->id}";
+        return $image->store($uploadPath, 'public');
     }
 }

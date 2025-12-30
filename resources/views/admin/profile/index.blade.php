@@ -11,7 +11,7 @@
                     <div class="row">
                         <div class="col-md-4 text-center">
                             <div class="position-relative d-inline-block mb-3">
-                                @if($user->image)
+                                @if($user->image && $user->image_url)
                                     <img src="{{ $user->image_url }}" alt="{{ $user->name }}" 
                                          class="avatar-lg rounded-circle border border-3 border-primary" 
                                          style="width: 120px; height: 120px; object-fit: cover;">

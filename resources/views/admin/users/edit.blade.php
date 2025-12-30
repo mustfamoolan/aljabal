@@ -20,7 +20,7 @@
                 <h4 class="card-title">معلومات المستخدم</h4>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('admin.users.update', $user) }}">
+                <form method="POST" action="{{ route('admin.users.update', $user) }}" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
                     <div class="row">
@@ -118,6 +118,28 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-lg-12">
+                            <div class="mb-3">
+                                <label for="image" class="form-label">صورة البروفايل</label>
+                                @if($user->image && $user->image_url)
+                                    <div class="mb-2">
+                                        <img src="{{ $user->image_url }}" alt="{{ $user->name }}" 
+                                             class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
+                                        <p class="text-muted small mb-0">الصورة الحالية</p>
+                                    </div>
+                                @endif
+                                <input type="file" id="image" name="image" class="form-control @error('image') is-invalid @enderror"
+                                       accept="image/jpeg,image/png,image/jpg,image/gif">
+                                @error('image')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="form-text text-muted">الصيغ المدعومة: JPEG, PNG, JPG, GIF. الحد الأقصى: 2MB. اتركه فارغاً للاحتفاظ بالصورة الحالية.</small>
+                                <div id="imagePreview" class="mt-3 text-center" style="display: none;">
+                                    <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                    <p class="text-muted small mb-0">معاينة الصورة الجديدة</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
             </div>
             <div class="card-footer border-top">
@@ -149,6 +171,27 @@
 
         // Check on change
         typeSelect.addEventListener('change', toggleEmployeeType);
+
+        // Image preview
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.style.display = 'none';
+                }
+            });
+        }
     });
 </script>
 @endsection

@@ -34,6 +34,7 @@ class StoreUserRequest extends FormRequest
                 Rule::excludeIf($this->type === UserType::ADMIN->value),
                 Rule::exists('employee_types', 'id'),
             ],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

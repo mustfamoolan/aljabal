@@ -20,7 +20,7 @@
                 <h4 class="card-title">معلومات المستخدم</h4>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ route('admin.users.store') }}">
+                <form method="POST" action="{{ route('admin.users.store') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="row">
                         <div class="col-lg-6">
@@ -117,6 +117,20 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-lg-12">
+                            <div class="mb-3">
+                                <label for="image" class="form-label">صورة البروفايل</label>
+                                <input type="file" id="image" name="image" class="form-control @error('image') is-invalid @enderror"
+                                       accept="image/jpeg,image/png,image/jpg,image/gif">
+                                @error('image')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="form-text text-muted">الصيغ المدعومة: JPEG, PNG, JPG, GIF. الحد الأقصى: 2MB</small>
+                                <div id="imagePreview" class="mt-3 text-center" style="display: none;">
+                                    <img id="previewImg" src="" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
             </div>
             <div class="card-footer border-top">
@@ -153,6 +167,27 @@
 
         // Check on change
         typeSelect.addEventListener('change', toggleEmployeeType);
+
+        // Image preview
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    imagePreview.style.display = 'none';
+                }
+            });
+        }
     });
 </script>
 @endsection
