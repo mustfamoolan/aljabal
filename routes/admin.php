@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Profile
     Route::get('/profile', [ProfileController::class, 'index'])->name('admin.profile');
+    Route::post('/profile/update-image', [ProfileController::class, 'updateImage'])->name('admin.profile.update-image');
 
     // Users routes
     Route::resource('users', UserController::class)->names([

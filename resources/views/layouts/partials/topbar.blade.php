@@ -86,9 +86,15 @@
                     <a type="button" class="topbar-button" id="page-header-user-dropdown" data-bs-toggle="dropdown"
                        aria-haspopup="true" aria-expanded="false">
                               <span class="d-flex align-items-center">
-                                  <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
-                                      <span class="text-primary fw-semibold">{{ substr($user->name, 0, 1) }}</span>
-                                  </div>
+                                  @if($user->image)
+                                      <img src="{{ $user->image_url }}" alt="{{ $user->name }}" 
+                                           class="avatar-sm rounded-circle border border-2 border-primary"
+                                           style="width: 32px; height: 32px; object-fit: cover;">
+                                  @else
+                                      <div class="avatar-sm rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center">
+                                          <span class="text-primary fw-semibold">{{ substr($user->name, 0, 1) }}</span>
+                                      </div>
+                                  @endif
                               </span>
                     </a>
                     <div class="dropdown-menu dropdown-menu-end">

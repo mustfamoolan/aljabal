@@ -27,6 +27,7 @@ class User extends Authenticatable
         'phone',
         'email',
         'password',
+        'image',
         'type',
         'employee_type_id',
         'is_active',
@@ -112,5 +113,16 @@ class User extends Authenticatable
     public function routeNotificationForFcm(): ?string
     {
         return $this->fcm_token;
+    }
+
+    /**
+     * Get the image URL
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->image) {
+            return null;
+        }
+        return asset('storage/' . $this->image);
     }
 }
