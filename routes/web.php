@@ -46,6 +46,21 @@ Route::get('/refresh-csrf-token', function () {
     return response()->json(['token' => csrf_token()]);
 })->middleware('web');
 
+// Storage files route (for when symbolic link doesn't work)
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+    
+    $mimeType = mime_content_type($filePath);
+    
+    return response()->file($filePath, [
+        'Content-Type' => $mimeType,
+    ]);
+})->where('path', '.*')->name('storage.file');
+
 // Redirect root to admin login if not authenticated
 Route::get('/', function () {
     if (auth()->check()) {
