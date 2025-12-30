@@ -47,6 +47,9 @@ class LoginController extends Controller
             ]);
         }
 
-        return redirect()->intended('/dashboards/index');
+        // Clear any intended URL to avoid redirecting to logout or other unwanted pages
+        $request->session()->forget('url.intended');
+        
+        return redirect('/dashboards/index');
     }
 }
