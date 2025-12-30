@@ -168,12 +168,12 @@
                         </div>
                         <div class="col-lg-4">
                             <div class="mb-3">
-                                <label for="retail_price" class="form-label">سعر البيع مفرد</label>
+                                <label for="wholesale_price" class="form-label">سعر البيع جملة</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="0.01" id="retail_price" name="retail_price" class="form-control @error('retail_price') is-invalid @enderror"
-                                           placeholder="0.00" value="{{ old('retail_price') }}">
-                                    @error('retail_price')
+                                    <input type="number" step="0.01" id="wholesale_price" name="wholesale_price" class="form-control @error('wholesale_price') is-invalid @enderror"
+                                           placeholder="0.00" value="{{ old('wholesale_price') }}">
+                                    @error('wholesale_price')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -181,12 +181,12 @@
                         </div>
                         <div class="col-lg-4">
                             <div class="mb-3">
-                                <label for="wholesale_price" class="form-label">سعر البيع جملة</label>
+                                <label for="retail_price" class="form-label">سعر البيع مفرد</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="0.01" id="wholesale_price" name="wholesale_price" class="form-control @error('wholesale_price') is-invalid @enderror"
-                                           placeholder="0.00" value="{{ old('wholesale_price') }}">
-                                    @error('wholesale_price')
+                                    <input type="number" step="0.01" id="retail_price" name="retail_price" class="form-control @error('retail_price') is-invalid @enderror"
+                                           placeholder="0.00" value="{{ old('retail_price') }}">
+                                    @error('retail_price')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>

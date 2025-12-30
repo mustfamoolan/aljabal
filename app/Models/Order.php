@@ -27,6 +27,12 @@ class Order extends Model
         'representative_id',
         'created_by',
         'completed_at',
+        'governorate_id',
+        'district_id',
+        'delivery_fee',
+        'gift_id',
+        'gift_box_id',
+        'gift_price',
     ];
 
     protected function casts(): array
@@ -37,6 +43,8 @@ class Order extends Model
             'total_profit' => 'decimal:2',
             'preparation_commission' => 'decimal:2',
             'final_profit' => 'decimal:2',
+            'delivery_fee' => 'decimal:2',
+            'gift_price' => 'decimal:2',
             'completed_at' => 'datetime',
         ];
     }
@@ -63,6 +71,38 @@ class Order extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the governorate for the order.
+     */
+    public function governorate(): BelongsTo
+    {
+        return $this->belongsTo(Governorate::class);
+    }
+
+    /**
+     * Get the district for the order.
+     */
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    /**
+     * Get the gift for the order.
+     */
+    public function gift(): BelongsTo
+    {
+        return $this->belongsTo(GiftSetting::class, 'gift_id');
+    }
+
+    /**
+     * Get the gift box for the order.
+     */
+    public function giftBox(): BelongsTo
+    {
+        return $this->belongsTo(GiftSetting::class, 'gift_box_id');
     }
 
     /**

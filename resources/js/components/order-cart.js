@@ -64,12 +64,19 @@ document.addEventListener('DOMContentLoaded', function() {
         cart.forEach((item, index) => {
             // Calculate if customer_price is not set
             const customerPrice = item.customer_price || 0;
+            const retailPrice = item.retail_price || 0;
             const profitPerItem = Math.max(0, customerPrice - (item.wholesale_price || 0));
             const subtotal = customerPrice * item.quantity;
             const profitSubtotal = profitPerItem * item.quantity;
             
             total += subtotal;
             profit += profitSubtotal;
+            
+            // Determine placeholder and suggestion text
+            const hasRetailPrice = retailPrice > 0;
+            const placeholder = hasRetailPrice && customerPrice === 0 
+                ? `اقتراح: ${formatCurrency(retailPrice)}` 
+                : 'أدخل السعر';
             
             html += `
                 <div class="card mb-3 cart-item" data-index="${index}">
@@ -89,16 +96,32 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label small">سعر البيع للزبون <span class="text-danger">*</span></label>
-                                <input type="number" 
-                                       step="0.01" 
-                                       min="${item.wholesale_price || 0}" 
-                                       class="form-control form-control-sm customer-price-input" 
-                                       data-index="${index}"
-                                       data-wholesale-price="${item.wholesale_price || 0}"
-                                       value="${customerPrice}"
-                                       placeholder="أدخل السعر"
-                                       required>
-                                <small class="text-muted">يجب أن يكون أكبر من أو يساوي سعر الجملة</small>
+                                <div class="input-group input-group-sm">
+                                    <input type="number" 
+                                           step="0.01" 
+                                           min="${item.wholesale_price || 0}" 
+                                           class="form-control form-control-sm customer-price-input" 
+                                           data-index="${index}"
+                                           data-wholesale-price="${item.wholesale_price || 0}"
+                                           data-retail-price="${retailPrice}"
+                                           value="${customerPrice > 0 ? customerPrice : ''}"
+                                           placeholder="${placeholder}"
+                                           required>
+                                    ${hasRetailPrice && customerPrice === 0 ? `
+                                    <button type="button" 
+                                            class="btn btn-outline-primary btn-sm use-suggested-price-btn" 
+                                            data-index="${index}"
+                                            data-suggested-price="${retailPrice}"
+                                            title="استخدام السعر المقترح">
+                                        <iconify-icon icon="solar:lightbulb-bold-duotone"></iconify-icon>
+                                    </button>
+                                    ` : ''}
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    ${hasRetailPrice && customerPrice === 0 
+                                        ? `<span class="text-info"><iconify-icon icon="solar:lightbulb-bold-duotone" class="align-middle"></iconify-icon> اقتراح السعر: ${formatCurrency(retailPrice)} (سعر المفرد)</span>` 
+                                        : 'يجب أن يكون أكبر من أو يساوي سعر الجملة'}
+                                </small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small">الربح للوحدة</label>
@@ -196,6 +219,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (checkoutBtn) {
                     checkoutBtn.style.display = allPricesSet ? 'block' : 'none';
                     checkoutBtn.disabled = !allPricesSet;
+                }
+
+                // Hide suggestion button and text if price is set
+                if (customerPrice > 0) {
+                    const suggestionBtn = cartItem.querySelector('.use-suggested-price-btn');
+                    const suggestionText = cartItem.querySelector('.text-info');
+                    if (suggestionBtn) suggestionBtn.style.display = 'none';
+                    if (suggestionText) suggestionText.style.display = 'none';
+                }
+            });
+        });
+
+        // Add suggestion button listeners
+        document.querySelectorAll('.use-suggested-price-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                const suggestedPrice = parseFloat(this.dataset.suggestedPrice) || 0;
+                const input = document.querySelector(`.customer-price-input[data-index="${index}"]`);
+                
+                if (input && suggestedPrice > 0) {
+                    input.value = suggestedPrice;
+                    // Trigger input event to update calculations
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             });
         });

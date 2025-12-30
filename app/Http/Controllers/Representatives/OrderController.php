@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Representatives;
 
 use App\Http\Controllers\Controller;
+use App\Models\District;
+use App\Models\GiftSetting;
+use App\Models\Governorate;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\Orders\OrderService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -141,11 +145,32 @@ class OrderController extends Controller
             'customer_phone_2' => ['nullable', 'string', 'max:255'],
             'customer_social_media' => ['nullable', 'string', 'max:255'],
             'customer_notes' => ['nullable', 'string'],
+            'governorate_id' => ['required', 'exists:governorates,id'],
+            'district_id' => ['nullable', 'exists:districts,id'],
+            'gift_id' => ['nullable', 'exists:gift_settings,id'],
+            'gift_box_id' => ['nullable', 'exists:gift_settings,id'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.customer_price' => ['required', 'numeric', 'min:0.01'],
         ]);
+
+        // Validate gift_box_id matches book count if provided
+        if ($validated['gift_box_id'] ?? null) {
+            $totalBooks = array_sum(array_column($validated['items'], 'quantity'));
+            $giftBox = GiftSetting::find($validated['gift_box_id']);
+            
+            if ($giftBox && $giftBox->type === 'gift_box') {
+                $minBooks = $giftBox->min_books ?? 0;
+                $maxBooks = $giftBox->max_books ?? 999999;
+                
+                if ($totalBooks < $minBooks || $totalBooks > $maxBooks) {
+                    return back()->withErrors([
+                        'gift_box_id' => 'عدد الكتب في الطلب لا يتناسب مع البوكس المختار.'
+                    ])->withInput();
+                }
+            }
+        }
 
         try {
             // Create order
@@ -186,7 +211,30 @@ class OrderController extends Controller
      */
     public function checkout(): View
     {
-        return view('representatives.orders.checkout');
+        $governorates = Governorate::active()->orderBy('name')->get();
+        $gifts = GiftSetting::gifts()->active()->orderBy('name')->get();
+        $giftBoxes = GiftSetting::giftBoxes()->active()->orderBy('min_books')->get();
+        
+        return view('representatives.orders.checkout', compact('governorates', 'gifts', 'giftBoxes'));
+    }
+
+    /**
+     * Get districts for a governorate.
+     */
+    public function getDistricts($governorate): JsonResponse
+    {
+        try {
+            $governorateModel = Governorate::findOrFail($governorate);
+            
+            $districts = District::where('governorate_id', $governorateModel->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            return response()->json($districts);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 404);
+        }
     }
 
     /**
@@ -222,7 +270,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $order->load('orderItems.product', 'representative');
+        $order->load('orderItems.product.images', 'representative', 'governorate', 'district', 'gift', 'giftBox');
 
         return view('representatives.orders.show', compact('order'));
     }

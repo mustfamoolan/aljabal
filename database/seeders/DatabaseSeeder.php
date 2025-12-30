@@ -25,5 +25,9 @@ class DatabaseSeeder extends Seeder
         // Seed inventory data
         $this->call(\Database\Seeders\Inventory\CategorySeeder::class);
         $this->call(\Database\Seeders\Inventory\TagSeeder::class);
+
+        // Seed governorates and districts
+        $this->call(GovernorateSeeder::class);
+        $this->call(DistrictSeeder::class);
     }
 }

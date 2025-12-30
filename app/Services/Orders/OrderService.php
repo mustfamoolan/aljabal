@@ -5,6 +5,7 @@ namespace App\Services\Orders;
 use App\Enums\OrderStatus;
 use App\Enums\TransactionStatus;
 use App\Enums\TransactionType;
+use App\Models\GiftSetting;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -31,11 +32,62 @@ class OrderService
     }
 
     /**
+     * Calculate delivery fee based on governorate.
+     */
+    public function calculateDeliveryFee(?int $governorateId): float
+    {
+        if (!$governorateId) {
+            return 0;
+        }
+
+        // البصرة: 3000 دينار
+        // باقي المحافظات: 5000 دينار
+        $basraId = \App\Models\Governorate::where('name', 'البصرة')->value('id');
+        
+        if ($basraId && $governorateId == $basraId) {
+            return 3000.0;
+        }
+        
+        return 5000.0;
+    }
+
+    /**
+     * Calculate gift price based on selected gifts.
+     */
+    public function calculateGiftPrice(?int $giftId, ?int $giftBoxId): float
+    {
+        $price = 0.0;
+
+        if ($giftId) {
+            $gift = GiftSetting::find($giftId);
+            if ($gift && $gift->type === 'gift') {
+                $price += (float) ($gift->price ?? 0);
+            }
+        }
+
+        if ($giftBoxId) {
+            $giftBox = GiftSetting::find($giftBoxId);
+            if ($giftBox && $giftBox->type === 'gift_box') {
+                $price += (float) ($giftBox->box_price ?? 0);
+            }
+        }
+
+        return $price;
+    }
+
+    /**
      * Create a new order.
      */
     public function createOrder(array $customerData, ?Representative $representative = null, ?User $user = null): Order
     {
         return DB::transaction(function () use ($customerData, $representative, $user) {
+            $governorateId = $customerData['governorate_id'] ?? null;
+            $deliveryFee = $this->calculateDeliveryFee($governorateId);
+            
+            $giftId = $customerData['gift_id'] ?? null;
+            $giftBoxId = $customerData['gift_box_id'] ?? null;
+            $giftPrice = $this->calculateGiftPrice($giftId, $giftBoxId);
+
             $order = Order::create([
                 'customer_name' => $customerData['customer_name'],
                 'customer_address' => $customerData['customer_address'],
@@ -43,6 +95,12 @@ class OrderService
                 'customer_phone_2' => $customerData['customer_phone_2'] ?? null,
                 'customer_social_media' => $customerData['customer_social_media'] ?? null,
                 'customer_notes' => $customerData['customer_notes'] ?? null,
+                'governorate_id' => $governorateId,
+                'district_id' => $customerData['district_id'] ?? null,
+                'delivery_fee' => $deliveryFee,
+                'gift_id' => $giftId,
+                'gift_box_id' => $giftBoxId,
+                'gift_price' => $giftPrice,
                 'status' => OrderStatus::NEW,
                 'representative_id' => $representative?->id,
                 'created_by' => $user?->id,
@@ -131,7 +189,10 @@ class OrderService
      */
     public function calculateOrderTotals(Order $order): Order
     {
-        $totalAmount = $order->calculateTotal();
+        $itemsTotal = $order->calculateTotal();
+        $deliveryFee = (float) ($order->delivery_fee ?? 0);
+        $giftPrice = (float) ($order->gift_price ?? 0);
+        $totalAmount = $itemsTotal + $deliveryFee + $giftPrice; // إضافة سعر التوصيل والهدايا إلى السعر الكلي
         $totalProfit = $order->calculateProfit();
         $preparationCommission = $this->commissionService->calculateCommission($order);
         $finalProfit = max(0, $totalProfit - $preparationCommission);

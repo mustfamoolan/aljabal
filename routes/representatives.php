@@ -43,7 +43,9 @@ Route::middleware(['auth:representative', 'representative'])->group(function () 
         Route::get('/cart', [OrderController::class, 'cart'])->name('cart');
         Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout');
         Route::post('/calculate-commission', [OrderController::class, 'calculateCommission'])->name('calculate-commission');
+        Route::get('/districts/{governorate}', [OrderController::class, 'getDistricts'])->name('districts');
         Route::get('/', [OrderController::class, 'index'])->name('index');
+        // This route must be last to avoid matching 'districts' as an order
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
     });
 });

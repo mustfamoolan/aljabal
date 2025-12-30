@@ -135,6 +135,9 @@ Route::group(['prefix' => '/', 'middleware' => ['auth', 'admin']], function () {
     // Withdrawal Settings routes
     Route::get('admin/settings/withdrawal', [WithdrawalSettingsController::class, 'index'])->name('admin.settings.withdrawal.index');
 
+    // General Settings routes
+    Route::get('general/settings', [\App\Http\Controllers\General\SettingsController::class, 'index'])->name('general.settings.index');
+
     // Orders routes (admin)
     Route::get('admin/orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('admin.orders.index');
     Route::get('admin/orders/{order}', [\App\Http\Controllers\Admin\OrderController::class, 'show'])->name('admin.orders.show');

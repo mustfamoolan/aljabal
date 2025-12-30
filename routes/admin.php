@@ -116,13 +116,25 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::post('/{withdrawalRequest}/reject', [WithdrawalRequestController::class, 'reject'])->name('reject');
     });
 
-    // Withdrawal Settings
+    // Withdrawal Settings (kept for backward compatibility, redirects to general settings)
     Route::prefix('settings/withdrawal')->name('admin.settings.withdrawal.')->group(function () {
         Route::get('/', [WithdrawalSettingsController::class, 'index'])->name('index');
         Route::post('/general', [WithdrawalSettingsController::class, 'updateGeneral'])->name('update-general');
         Route::post('/exceptions', [WithdrawalSettingsController::class, 'createException'])->name('create-exception');
         Route::put('/exceptions/{withdrawalSetting}', [WithdrawalSettingsController::class, 'updateException'])->name('update-exception');
         Route::delete('/exceptions/{withdrawalSetting}', [WithdrawalSettingsController::class, 'deleteException'])->name('delete-exception');
+    });
+
+    // General Settings
+    Route::prefix('general/settings')->name('general.settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\General\SettingsController::class, 'index'])->name('index');
+        Route::post('/withdrawal/general', [\App\Http\Controllers\General\SettingsController::class, 'updateWithdrawalGeneral'])->name('withdrawal.update-general');
+        Route::post('/withdrawal/exceptions', [\App\Http\Controllers\General\SettingsController::class, 'createWithdrawalException'])->name('withdrawal.create-exception');
+        Route::put('/withdrawal/exceptions/{withdrawalSetting}', [\App\Http\Controllers\General\SettingsController::class, 'updateWithdrawalException'])->name('withdrawal.update-exception');
+        Route::delete('/withdrawal/exceptions/{withdrawalSetting}', [\App\Http\Controllers\General\SettingsController::class, 'deleteWithdrawalException'])->name('withdrawal.delete-exception');
+        Route::post('/gifts', [\App\Http\Controllers\General\SettingsController::class, 'storeGiftSetting'])->name('gifts.store');
+        Route::put('/gifts/{giftSetting}', [\App\Http\Controllers\General\SettingsController::class, 'updateGiftSetting'])->name('gifts.update');
+        Route::delete('/gifts/{giftSetting}', [\App\Http\Controllers\General\SettingsController::class, 'deleteGiftSetting'])->name('gifts.delete');
     });
 
     // Orders

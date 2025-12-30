@@ -5,6 +5,44 @@
     @include('layouts.partials/title-meta', ['title' => $title])
     @yield('css')
     @include('layouts.partials/head-css')
+    <style>
+        /* إخفاء السايد بار بالكامل في واجهة المندوبين */
+        .main-nav {
+            display: none !important;
+            width: 0 !important;
+            min-width: 0 !important;
+        }
+        /* إزالة جميع الفراغات من المحتوى */
+        .page-content {
+            margin-right: 0 !important;
+            margin-left: 0 !important;
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+        }
+        .wrapper {
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+        }
+        /* إزالة padding من topbar */
+        .topbar {
+            padding-right: 0 !important;
+            padding-left: 0 !important;
+        }
+        .topbar .container-fluid {
+            padding-right: 1rem !important;
+            padding-left: 1rem !important;
+        }
+        /* إخفاء زر القائمة وإزالة الفراغ */
+        .button-toggle-menu,
+        .topbar-item:has(.button-toggle-menu),
+        .button-sm-hover {
+            display: none !important;
+        }
+        /* إزالة أي margin أو padding من زر القائمة */
+        .navbar-header .d-flex {
+            gap: 0 !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -12,9 +50,8 @@
 <div class="wrapper">
 
     @include("layouts.partials/representative-topbar", ['title' => $title])
-    @include('layouts.partials/representative-nav')
 
-    <div class="page-content">
+    <div class="page-content" style="margin-right: 0;">
 
         <div class="container-fluid">
             @yield('content')

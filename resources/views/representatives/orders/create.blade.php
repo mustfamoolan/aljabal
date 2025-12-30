@@ -37,7 +37,7 @@
                 <h6 class="mb-3">الأقسام الرئيسية</h6>
                 <div class="categories-slider-wrapper" style="position: relative;">
                     <div class="categories-slider d-flex gap-2 overflow-auto pb-2" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;">
-                        <button type="button" 
+                        <button type="button"
                                 class="btn btn-outline-primary category-filter-btn flex-shrink-0 {{ !request('category_id') ? 'active' : '' }}"
                                 data-category-id=""
                                 style="white-space: nowrap;">
@@ -45,7 +45,7 @@
                             جميع الأقسام
                         </button>
                         @foreach($mainCategories as $category)
-                            <button type="button" 
+                            <button type="button"
                                     class="btn btn-outline-primary category-filter-btn flex-shrink-0 {{ request('category_id') == $category->id ? 'active' : '' }}"
                                     data-category-id="{{ $category->id }}"
                                     style="white-space: nowrap;">
@@ -95,8 +95,8 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label small mb-1">الكمية</label>
-                        <input type="number" min="1" max="{{ $product->quantity }}" value="1" 
-                               class="form-control form-control-sm quantity-input" 
+                        <input type="number" min="1" max="{{ $product->quantity }}" value="1"
+                               class="form-control form-control-sm quantity-input"
                                data-product-id="{{ $product->id }}"
                                data-max-quantity="{{ $product->quantity }}">
                     </div>
@@ -106,10 +106,11 @@
                                 <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
                                 التفاصيل
                             </a>
-                            <button type="button" class="btn btn-primary d-flex align-items-center justify-content-center gap-1 flex-grow-1 add-to-cart-btn" 
+                            <button type="button" class="btn btn-primary d-flex align-items-center justify-content-center gap-1 flex-grow-1 add-to-cart-btn"
                                     data-product-id="{{ $product->id }}"
                                     data-product-name="{{ $product->name }}"
-                                    data-wholesale-price="{{ $product->wholesale_price ?? 0 }}">
+                                    data-wholesale-price="{{ $product->wholesale_price ?? 0 }}"
+                                    data-retail-price="{{ $product->retail_price ?? 0 }}">
                                 <iconify-icon icon="solar:cart-plus-bold-duotone"></iconify-icon>
                                 إضافة
                             </button>
@@ -348,6 +349,7 @@
             const productId = parseInt(this.dataset.productId);
             const productName = this.dataset.productName;
             const wholesalePrice = parseFloat(this.dataset.wholesalePrice) || 0;
+            const retailPrice = parseFloat(this.dataset.retailPrice) || 0;
             const quantityInput = document.querySelector(`.quantity-input[data-product-id="${productId}"]`);
             const quantity = parseInt(quantityInput.value) || 1;
 
@@ -372,6 +374,7 @@
                     product_id: productId,
                     product_name: productName,
                     wholesale_price: wholesalePrice,
+                    retail_price: retailPrice, // سعر المفرد للمنتج
                     customer_price: 0, // Will be set in cart page
                     quantity: quantity,
                     profit_per_item: 0,

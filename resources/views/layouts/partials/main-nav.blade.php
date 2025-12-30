@@ -207,15 +207,12 @@
                         <li class="sub-nav-item">
                             <a class="sub-nav-link" href="{{ route('admin.withdrawals.index') }}">قائمة الطلبات</a>
                         </li>
-                        <li class="sub-nav-item">
-                            <a class="sub-nav-link" href="{{ route('admin.settings.withdrawal.index') }}">إعدادات السحب</a>
-                        </li>
                     </ul>
                 </div>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('second', ['general', 'settings'])}}">
+                <a class="nav-link" href="{{ route('general.settings.index') }}">
                          <span class="nav-icon">
                               <iconify-icon icon="solar:settings-bold-duotone"></iconify-icon>
                          </span>

@@ -204,7 +204,8 @@
                                 class="btn btn-primary w-100 add-to-cart-btn"
                                 data-product-id="{{ $product->id }}"
                                 data-product-name="{{ $product->name }}"
-                                data-wholesale-price="{{ $product->wholesale_price ?? 0 }}">
+                                data-wholesale-price="{{ $product->wholesale_price ?? 0 }}"
+                                data-retail-price="{{ $product->retail_price ?? 0 }}">
                             <iconify-icon icon="solar:cart-plus-bold-duotone"></iconify-icon>
                             إضافة للسلة
                         </button>
@@ -321,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const productId = parseInt(this.dataset.productId);
             const productName = this.dataset.productName;
             const wholesalePrice = parseFloat(this.dataset.wholesalePrice) || 0;
+            const retailPrice = parseFloat(this.dataset.retailPrice) || 0;
             const quantity = parseInt(quantityInput.value) || 1;
 
             if (quantity <= 0 || quantity > {{ $product->quantity }}) {
@@ -344,6 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     product_id: productId,
                     product_name: productName,
                     wholesale_price: wholesalePrice,
+                    retail_price: retailPrice, // سعر المفرد للمنتج
                     customer_price: 0, // Will be set in cart page
                     quantity: quantity,
                     profit_per_item: 0,

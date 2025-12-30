@@ -2,14 +2,7 @@
     <div class="container-fluid">
         <div class="navbar-header">
             <div class="d-flex align-items-center">
-                <!-- Menu Toggle Button -->
-                <div class="topbar-item">
-                    <button type="button" class="button-toggle-menu me-2">
-                        <iconify-icon icon="solar:hamburger-menu-broken" class="fs-24 align-middle"></iconify-icon>
-                    </button>
-                </div>
-
-                <!-- Menu Toggle Button -->
+                <!-- Title -->
                 <div class="topbar-item">
                     <h4 class="fw-bold topbar-button pe-none text-uppercase mb-0">{{ $title ?? 'Larkon' }}</h4>
                 </div>
