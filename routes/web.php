@@ -168,7 +168,7 @@ Route::group(['prefix' => '/', 'middleware' => ['auth', 'admin']], function () {
         ->where('first', '^(?!representative|admin).*')
         ->name('second');
     Route::get('{any}', [RoutingController::class, 'root'])
-        ->where('any', '^(?!api|service-worker|manifest|robots|representative).*')
+        ->where('any', '^(?!api|service-worker|manifest|robots|representative|admin).*')
         ->name('any');
 });
 

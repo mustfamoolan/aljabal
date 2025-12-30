@@ -45,6 +45,11 @@ class RoutingController extends BaseController
             abort(404);
         }
 
+        // Exclude admin routes - they are handled in routes/admin.php
+        if ($first === 'admin' || str_starts_with($first, 'admin/')) {
+            abort(404);
+        }
+
         // Exclude .well-known and other system paths
         if ($first === '.well-known' || str_starts_with($first, '.')) {
             abort(404);
