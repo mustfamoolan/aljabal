@@ -50,12 +50,29 @@ class LoginRequest extends FormRequest
         // Determine if login is email or phone
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
 
-        // Check if representative exists and is active
-        $representative = \App\Models\Representative::where($field, $login)
-            ->where('is_active', true)
-            ->first();
+        // Check if representative exists (without is_active check first)
+        $representative = \App\Models\Representative::where($field, $login)->first();
 
-        if (!$representative || !Hash::check($password, $representative->password)) {
+        // Check if representative exists
+        if (!$representative) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'login' => __('auth.failed'),
+            ]);
+        }
+
+        // Check if representative is active
+        if (!$representative->is_active) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'login' => 'حسابك غير مفعّل. يرجى التواصل مع المسؤول.',
+            ]);
+        }
+
+        // Check password
+        if (!Hash::check($password, $representative->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
