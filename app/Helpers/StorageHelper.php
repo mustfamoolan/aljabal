@@ -26,10 +26,11 @@ class StorageHelper
             return asset('storage/' . $path);
         }
 
-        // Otherwise, use route to serve file directly from storage
+        // Otherwise, use direct URL to serve file directly from storage
         $storagePath = storage_path('app/public/' . $path);
         if (file_exists($storagePath)) {
-            return route('storage.file', ['path' => $path]);
+            // Use direct URL instead of route to avoid route not found errors
+            return url('/storage/' . $path);
         }
 
         return null;
