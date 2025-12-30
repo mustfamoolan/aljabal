@@ -123,6 +123,27 @@ class User extends Authenticatable
         if (!$this->image) {
             return null;
         }
-        return asset('storage/' . $this->image);
+        
+        // Try to use Storage facade URL first (works with symbolic link)
+        try {
+            $url = \Illuminate\Support\Facades\Storage::disk('public')->url($this->image);
+            // Check if URL is accessible (if symbolic link exists)
+            $publicPath = public_path('storage/' . $this->image);
+            if (file_exists($publicPath) || is_link(public_path('storage'))) {
+                return $url;
+            }
+        } catch (\Exception $e) {
+            // Fall through to alternative method
+        }
+        
+        // Alternative: Use direct path if symbolic link doesn't exist
+        // This works when files are directly accessible via web server
+        $storagePath = storage_path('app/public/' . $this->image);
+        if (file_exists($storagePath)) {
+            // Use Storage::url() which should work with proper config
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->image);
+        }
+        
+        return null;
     }
 }
