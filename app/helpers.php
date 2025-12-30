@@ -21,7 +21,7 @@ if (!function_exists('format_currency')) {
      * @param float|int $amount The amount to format
      * @return string Formatted currency string (e.g., "1,234.56 د.ع")
      */
-    function format_currency(float|int $amount): string
+    function format_currency($amount)
     {
         $amount = (float) $amount;
         
