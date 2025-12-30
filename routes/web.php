@@ -160,12 +160,13 @@ Route::group(['prefix' => '/', 'middleware' => ['auth', 'admin']], function () {
 
     // POST/PUT/DELETE routes are handled in routes/admin.php
 
-    // Exclude representative routes from catch-all routing
+    // Exclude representative routes and admin/profile from catch-all routing
     Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])
         ->where('first', '^(?!representative).*')
         ->name('third');
     Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])
-        ->where('first', '^(?!representative).*')
+        ->where('first', '^(?!representative|admin).*')
+        ->where('second', '^(?!profile).*')
         ->name('second');
     Route::get('{any}', [RoutingController::class, 'root'])
         ->where('any', '^(?!api|service-worker|manifest|robots|representative).*')

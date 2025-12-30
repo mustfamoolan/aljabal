@@ -88,9 +88,9 @@ class RoutingController extends BaseController
             return redirect()->route('users.pages-permission');
         }
 
-        // Redirect admin profile to its route
+        // Exclude admin/profile from catch-all routing (handled by direct route)
         if ($first === 'admin' && $second === 'profile') {
-            return redirect()->route('admin.profile');
+            abort(404);
         }
 
         return view($first . '.' . $second);
