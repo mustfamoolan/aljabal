@@ -88,6 +88,11 @@ class RoutingController extends BaseController
             return redirect()->route('users.pages-permission');
         }
 
+        // Redirect admin profile to its route
+        if ($first === 'admin' && $second === 'profile') {
+            return redirect()->route('admin.profile');
+        }
+
         return view($first . '.' . $second);
     }
 
