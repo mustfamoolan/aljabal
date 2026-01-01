@@ -65,6 +65,12 @@ class RolePermissionSeeder extends Seeder
             'inventory.suppliers.create',
             'inventory.suppliers.update',
             'inventory.suppliers.delete',
+
+            // Tags permissions
+            'tags.view',
+            'tags.create',
+            'tags.update',
+            'tags.delete',
         ];
 
         foreach ($permissions as $permission) {

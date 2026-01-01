@@ -86,7 +86,7 @@
                     <a type="button" class="topbar-button" id="page-header-user-dropdown" data-bs-toggle="dropdown"
                        aria-haspopup="true" aria-expanded="false">
                               <span class="d-flex align-items-center">
-                                  @if($user->image)
+                                  @if($user->image && $user->image_url)
                                       <img src="{{ $user->image_url }}" alt="{{ $user->name }}" 
                                            class="avatar-sm rounded-circle border border-2 border-primary"
                                            style="width: 32px; height: 32px; object-fit: cover;">
