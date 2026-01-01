@@ -435,6 +435,23 @@
                     <div id="image-preview" class="row g-2"></div>
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">رابط الفيديو (اختياري)</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="video_url" class="form-label">رابط YouTube أو Vimeo</label>
+                        <input type="url" id="video_url" name="video_url" class="form-control @error('video_url') is-invalid @enderror"
+                               placeholder="https://www.youtube.com/watch?v=..." value="{{ old('video_url') }}">
+                        @error('video_url')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <small class="form-text text-muted">يمكنك إضافة رابط فيديو من YouTube أو Vimeo</small>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="col-xl-3 col-lg-4">

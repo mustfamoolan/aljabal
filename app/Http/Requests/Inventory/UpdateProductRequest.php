@@ -54,6 +54,7 @@ class UpdateProductRequest extends FormRequest
             'short_description' => ['sometimes', 'nullable', 'string'],
             'long_description' => ['sometimes', 'nullable', 'string'],
             'color' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'video_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'images' => ['sometimes', 'nullable', 'array', 'max:10'],
             'images.*' => ['image', 'max:2048'],
             'tags' => ['sometimes', 'nullable', 'array'],

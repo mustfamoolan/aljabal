@@ -22,19 +22,32 @@
     <div class="col-lg-5">
         <div class="card">
             <div class="card-body">
-                @if($product->images->isNotEmpty())
-                    <div id="productCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel">
-                        <div class="carousel-inner">
+                @php
+                    $hasVideo = !empty($product->video_url);
+                    $videoEmbedUrl = $hasVideo ? get_video_embed_url($product->video_url) : null;
+                    $videoThumbnail = $hasVideo ? get_video_thumbnail($product->video_url) : null;
+                    $totalItems = $product->images->count() + ($hasVideo ? 1 : 0);
+                @endphp
+                @if($product->images->isNotEmpty() || $hasVideo)
+                    <div id="productCarousel" class="carousel slide carousel-fade" data-bs-ride="false" data-bs-interval="false">
+                        <div class="carousel-inner" style="min-height: 400px; display: flex; align-items: center;">
+                            @if($hasVideo)
+                                <div class="carousel-item active">
+                                    <div class="ratio ratio-16x9">
+                                        <iframe id="productVideo" src="{{ $videoEmbedUrl }}" class="rounded" allowfullscreen></iframe>
+                                    </div>
+                                </div>
+                            @endif
                             @foreach($product->images as $index => $image)
-                                <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
+                                <div class="carousel-item {{ !$hasVideo && $index === 0 ? 'active' : '' }}" style="display: flex; align-items: center; justify-content: center;">
                                     <img src="{{ storage_url($image->image_path) }}" 
                                          alt="{{ $product->name }}" 
                                          class="d-block w-100 rounded" 
-                                         style="max-height: 500px; object-fit: contain;">
+                                         style="max-height: 400px; width: auto; object-fit: contain;">
                                 </div>
                             @endforeach
                         </div>
-                        @if($product->images->count() > 1)
+                        @if($totalItems > 1)
                             <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                 <span class="visually-hidden">Previous</span>
@@ -45,14 +58,30 @@
                             </button>
                         @endif
                     </div>
-                    @if($product->images->count() > 1)
+                    @if($totalItems > 1)
                         <div class="d-flex gap-2 mt-3 overflow-auto">
+                            @if($hasVideo)
+                                <div class="img-thumbnail cursor-pointer position-relative" 
+                                     style="width: 80px; height: 80px; object-fit: cover; border: 2px solid #0d6efd;"
+                                     onclick="document.querySelector('#productCarousel').carousel(0)">
+                                    @if($videoThumbnail)
+                                        <img src="{{ $videoThumbnail }}" alt="Video thumbnail" style="width: 100%; height: 100%; object-fit: cover;">
+                                    @else
+                                        <div class="w-100 h-100 bg-primary d-flex align-items-center justify-content-center">
+                                            <iconify-icon icon="solar:play-bold-duotone" class="text-white fs-20"></iconify-icon>
+                                        </div>
+                                    @endif
+                                    <div class="position-absolute top-50 start-50 translate-middle">
+                                        <iconify-icon icon="solar:play-bold-duotone" class="text-white fs-16" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));"></iconify-icon>
+                                    </div>
+                                </div>
+                            @endif
                             @foreach($product->images as $index => $image)
                                 <img src="{{ storage_url($image->image_path) }}" 
                                      alt="Thumbnail {{ $index + 1 }}"
                                      class="img-thumbnail cursor-pointer" 
                                      style="width: 80px; height: 80px; object-fit: cover;"
-                                     onclick="document.querySelector('#productCarousel').carousel({{ $index }})">
+                                     onclick="document.querySelector('#productCarousel').carousel({{ $hasVideo ? $index + 1 : $index }})">
                             @endforeach
                         </div>
                     @endif
@@ -380,5 +409,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+@if($hasVideo)
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const carousel = document.getElementById('productCarousel');
+        const videoIframe = document.getElementById('productVideo');
+        
+        if (carousel && videoIframe) {
+            // Function to stop video by changing src
+            function stopVideo() {
+                const currentSrc = videoIframe.src;
+                // Remove the src to stop the video
+                videoIframe.src = '';
+                // Restore it after a brief moment (this stops the video)
+                setTimeout(() => {
+                    videoIframe.src = currentSrc;
+                }, 100);
+            }
+            
+            // Listen for slide change events
+            carousel.addEventListener('slide.bs.carousel', function (e) {
+                // If we're leaving the video slide, stop the video
+                if (e.from === 0) {
+                    stopVideo();
+                }
+            });
+            
+            // Also stop video when clicking on indicators or controls
+            carousel.addEventListener('slid.bs.carousel', function (e) {
+                // If we're not on the video slide (index 0), make sure video is stopped
+                if (e.to !== 0) {
+                    stopVideo();
+                }
+            });
+        }
+    });
+</script>
+@endif
 @endsection
 

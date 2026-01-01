@@ -6,17 +6,30 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-body">
-                @if($product->images->isNotEmpty())
+                @php
+                    $hasVideo = !empty($product->video_url);
+                    $videoEmbedUrl = $hasVideo ? get_video_embed_url($product->video_url) : null;
+                    $videoThumbnail = $hasVideo ? get_video_thumbnail($product->video_url) : null;
+                    $totalItems = $product->images->count() + ($hasVideo ? 1 : 0);
+                @endphp
+                @if($product->images->isNotEmpty() || $hasVideo)
                     <!-- Crossfade Carousel -->
-                    <div id="carouselExampleFade" class="carousel slide carousel-fade" data-bs-ride="carousel">
-                        <div class="carousel-inner" role="listbox">
+                    <div id="carouselExampleFade" class="carousel slide carousel-fade" data-bs-ride="false" data-bs-interval="false">
+                        <div class="carousel-inner" role="listbox" style="min-height: 400px; display: flex; align-items: center;">
+                            @if($hasVideo)
+                                <div class="carousel-item active">
+                                    <div class="ratio ratio-16x9">
+                                        <iframe id="productVideo" src="{{ $videoEmbedUrl }}" class="rounded" allowfullscreen></iframe>
+                                    </div>
+                                </div>
+                            @endif
                             @foreach($product->images as $index => $image)
-                                <div class="carousel-item {{ $index === 0 ? 'active' : '' }}">
-                                    <img src="{{ storage_url($image->image_path) }}" alt="{{ $product->name }}" class="img-fluid bg-light rounded">
+                                <div class="carousel-item {{ !$hasVideo && $index === 0 ? 'active' : '' }}" style="display: flex; align-items: center; justify-content: center;">
+                                    <img src="{{ storage_url($image->image_path) }}" alt="{{ $product->name }}" class="img-fluid bg-light rounded" style="max-height: 400px; width: auto; object-fit: contain;">
                                 </div>
                             @endforeach
                         </div>
-                        @if($product->images->count() > 1)
+                        @if($totalItems > 1)
                             <a class="carousel-control-prev rounded" href="#carouselExampleFade" role="button" data-bs-slide="prev">
                                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                                 <span class="visually-hidden">Previous</span>
@@ -28,10 +41,23 @@
                         @endif
                     </div>
                     <div class="carousel-indicators m-0 mt-2 d-lg-flex d-none position-static h-100">
+                        @if($hasVideo)
+                            <button type="button" data-bs-target="#carouselExampleFade" data-bs-slide-to="0"
+                                    aria-label="Video"
+                                    class="w-auto h-auto rounded bg-light active">
+                                @if($videoThumbnail)
+                                    <img src="{{ $videoThumbnail }}" class="d-block avatar-xl" alt="Video thumbnail">
+                                @else
+                                    <div class="d-block avatar-xl bg-primary d-flex align-items-center justify-content-center">
+                                        <iconify-icon icon="solar:play-bold-duotone" class="text-white fs-20"></iconify-icon>
+                                    </div>
+                                @endif
+                            </button>
+                        @endif
                         @foreach($product->images as $index => $image)
-                            <button type="button" data-bs-target="#carouselExampleFade" data-bs-slide-to="{{ $index }}"
+                            <button type="button" data-bs-target="#carouselExampleFade" data-bs-slide-to="{{ $hasVideo ? $index + 1 : $index }}"
                                     aria-label="Slide {{ $index + 1 }}"
-                                    class="w-auto h-auto rounded bg-light {{ $index === 0 ? 'active' : '' }}">
+                                    class="w-auto h-auto rounded bg-light {{ !$hasVideo && $index === 0 ? 'active' : '' }}">
                                 <img src="{{ storage_url($image->image_path) }}" class="d-block avatar-xl" alt="swiper-indicator-img">
                             </button>
                         @endforeach
@@ -342,4 +368,41 @@
 
 @section('script-bottom')
 @vite(['resources/js/pages/ecommerce-product-details.js'])
+@if($hasVideo)
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const carousel = document.getElementById('carouselExampleFade');
+        const videoIframe = document.getElementById('productVideo');
+        
+        if (carousel && videoIframe) {
+            // Function to stop video by changing src
+            function stopVideo() {
+                const currentSrc = videoIframe.src;
+                // Remove the src to stop the video
+                videoIframe.src = '';
+                // Restore it after a brief moment (this stops the video)
+                setTimeout(() => {
+                    videoIframe.src = currentSrc;
+                }, 100);
+            }
+            
+            // Listen for slide change events
+            carousel.addEventListener('slide.bs.carousel', function (e) {
+                // If we're leaving the video slide, stop the video
+                if (e.from === 0) {
+                    stopVideo();
+                }
+            });
+            
+            // Also stop video when clicking on indicators or controls
+            carousel.addEventListener('slid.bs.carousel', function (e) {
+                // If we're not on the video slide (index 0), make sure video is stopped
+                if (e.to !== 0) {
+                    stopVideo();
+                }
+            });
+        }
+    });
+</script>
+@endif
 @endsection

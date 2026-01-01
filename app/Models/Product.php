@@ -43,6 +43,7 @@ class Product extends Model
         'short_description',
         'long_description',
         'color',
+        'video_url',
         'first_purchase_date',
         'last_purchase_date',
         'is_active',

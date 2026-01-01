@@ -52,6 +52,7 @@ class StoreProductRequest extends FormRequest
             'short_description' => ['nullable', 'string'],
             'long_description' => ['nullable', 'string'],
             'color' => ['nullable', 'string', 'max:100'],
+            'video_url' => ['nullable', 'url', 'max:500'],
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'max:2048'],
             'tags' => ['nullable', 'array'],

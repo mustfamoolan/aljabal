@@ -87,3 +87,66 @@ if (!function_exists('permission_label')) {
         return $moduleLabel . ' - ' . $actionLabel;
     }
 }
+
+if (!function_exists('get_video_embed_url')) {
+    /**
+     * Convert YouTube or Vimeo URL to embed URL
+     *
+     * @param string|null $url The video URL
+     * @return string|null The embed URL or null if invalid
+     */
+    function get_video_embed_url($url)
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        // YouTube URL patterns
+        // https://www.youtube.com/watch?v=VIDEO_ID
+        // https://youtube.com/watch?v=VIDEO_ID
+        // https://youtu.be/VIDEO_ID
+        // https://www.youtube.com/embed/VIDEO_ID
+        if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $url, $matches)) {
+            return 'https://www.youtube.com/embed/' . $matches[1];
+        }
+
+        // Vimeo URL patterns
+        // https://vimeo.com/VIDEO_ID
+        // https://player.vimeo.com/video/VIDEO_ID
+        if (preg_match('/(?:vimeo\.com\/|player\.vimeo\.com\/video\/)(\d+)/', $url, $matches)) {
+            return 'https://player.vimeo.com/video/' . $matches[1];
+        }
+
+        // If already an embed URL, return as is
+        if (str_contains($url, 'youtube.com/embed') || str_contains($url, 'vimeo.com/video')) {
+            return $url;
+        }
+
+        return null;
+    }
+}
+
+if (!function_exists('get_video_thumbnail')) {
+    /**
+     * Get thumbnail URL for YouTube or Vimeo video
+     *
+     * @param string|null $url The video URL
+     * @return string|null The thumbnail URL or null if invalid
+     */
+    function get_video_thumbnail($url)
+    {
+        if (empty($url)) {
+            return null;
+        }
+
+        // YouTube thumbnail
+        if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $url, $matches)) {
+            return 'https://img.youtube.com/vi/' . $matches[1] . '/maxresdefault.jpg';
+        }
+
+        // Vimeo thumbnail (requires API call, return null for now)
+        // Can be implemented later if needed
+
+        return null;
+    }
+}
