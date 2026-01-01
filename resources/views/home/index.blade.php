@@ -137,7 +137,7 @@
         @endif
 
         <!-- التاغات -->
-        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access') || auth()->user()->can('tags.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">

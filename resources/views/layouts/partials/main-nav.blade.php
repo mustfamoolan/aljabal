@@ -82,7 +82,9 @@
                     <span class="nav-text"> الإعدادات </span>
                 </a>
             </li>
+            @endif
 
+            @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access') || auth()->user()->can('tags.view'))
             <li class="menu-title mt-2">التاغات</li>
 
             <li class="nav-item">

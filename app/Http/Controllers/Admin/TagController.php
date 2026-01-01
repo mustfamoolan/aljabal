@@ -15,6 +15,8 @@ class TagController extends Controller
      */
     public function index(Request $request): View
     {
+        $this->authorize('tags.view');
+
         $query = Tag::withCount('products');
 
         // Search
@@ -33,6 +35,8 @@ class TagController extends Controller
      */
     public function create(): View
     {
+        $this->authorize('tags.create');
+
         return view('tags.create');
     }
 
@@ -41,6 +45,8 @@ class TagController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $this->authorize('tags.create');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:tags,name'],
         ], [
@@ -59,6 +65,8 @@ class TagController extends Controller
      */
     public function edit(Tag $tag): View
     {
+        $this->authorize('tags.update');
+
         return view('tags.edit', compact('tag'));
     }
 
@@ -67,6 +75,8 @@ class TagController extends Controller
      */
     public function update(Request $request, Tag $tag): RedirectResponse
     {
+        $this->authorize('tags.update');
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:tags,name,' . $tag->id],
         ], [
@@ -85,6 +95,8 @@ class TagController extends Controller
      */
     public function destroy(Tag $tag): RedirectResponse
     {
+        $this->authorize('tags.delete');
+
         $tag->delete();
 
         return redirect()->route('admin.tags.index')
