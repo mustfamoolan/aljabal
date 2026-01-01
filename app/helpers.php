@@ -59,6 +59,7 @@ if (!function_exists('permission_label')) {
             'representatives' => 'المندوبين',
             'admin' => 'لوحة التحكم',
             'inventory' => 'المخزون',
+            'tags' => 'التاغات',
         ];
 
         $actionLabels = [
@@ -82,6 +83,12 @@ if (!function_exists('permission_label')) {
             ];
             $moduleLabel = $subModuleLabels[$subModule] ?? $subModule;
             $actionLabel = $actionLabels[$subAction] ?? $subAction;
+        }
+
+        // Handle admin.tags.* permissions
+        if ($module === 'admin' && isset($parts[1]) && $parts[1] === 'tags' && isset($parts[2])) {
+            $moduleLabel = 'التاغات';
+            $actionLabel = $actionLabels[$parts[2]] ?? $parts[2];
         }
 
         return $moduleLabel . ' - ' . $actionLabel;
