@@ -219,7 +219,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column gap-1">
-                                        @if($product->purchase_price)
+                                        @if($product->purchase_price && auth()->user()->canViewPurchasePrice())
                                             <small class="text-muted">شراء: {{ format_currency($product->purchase_price) }}</small>
                                         @endif
                                         @if($product->retail_price)

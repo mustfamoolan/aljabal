@@ -153,6 +153,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        @if(auth()->user()->canViewPurchasePrice())
                         <div class="col-lg-4">
                             <div class="mb-3">
                                 <label for="purchase_price" class="form-label">سعر الشراء</label>
@@ -166,6 +167,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
                         <div class="col-lg-4">
                             <div class="mb-3">
                                 <label for="wholesale_price" class="form-label">سعر البيع جملة</label>
@@ -416,7 +418,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">صور المنتج (4 صور كحد أقصى)</h4>
+                    <h4 class="card-title">صور المنتج (10 صور كحد أقصى)</h4>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -428,7 +430,7 @@
                         @error('images.*')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <small class="form-text text-muted">يمكن رفع 4 صور كحد أقصى. حجم كل صورة يجب أن يكون أقل من 2 ميجابايت</small>
+                        <small class="form-text text-muted">يمكن رفع 10 صور كحد أقصى. حجم كل صورة يجب أن يكون أقل من 2 ميجابايت</small>
                     </div>
                     <div id="image-preview" class="row g-2"></div>
                 </div>
@@ -524,7 +526,7 @@
 
         imagesInput.addEventListener('change', function(e) {
             imagePreview.innerHTML = '';
-            const files = Array.from(e.target.files).slice(0, 4);
+            const files = Array.from(e.target.files).slice(0, 10);
 
             files.forEach((file, index) => {
                 if (file.type.startsWith('image/')) {

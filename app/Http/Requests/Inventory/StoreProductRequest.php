@@ -52,7 +52,7 @@ class StoreProductRequest extends FormRequest
             'short_description' => ['nullable', 'string'],
             'long_description' => ['nullable', 'string'],
             'color' => ['nullable', 'string', 'max:100'],
-            'images' => ['nullable', 'array', 'max:4'],
+            'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'max:2048'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['exists:tags,id'],
@@ -70,7 +70,7 @@ class StoreProductRequest extends FormRequest
             'name.required' => 'اسم المنتج مطلوب',
             'product_type.required' => 'نوع المنتج مطلوب',
             'sku.unique' => 'كود المنتج مستخدم بالفعل',
-            'images.max' => 'يمكن رفع 4 صور كحد أقصى',
+            'images.max' => 'يمكن رفع 10 صور كحد أقصى',
             'images.*.image' => 'يجب أن تكون الملفات صور',
             'images.*.max' => 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت',
         ];

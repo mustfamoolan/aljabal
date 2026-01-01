@@ -84,6 +84,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user can view purchase price (only admin)
+     */
+    public function canViewPurchasePrice(): bool
+    {
+        return $this->isAdmin();
+    }
+
+    /**
      * Get the employee type that belongs to the user.
      */
     public function employeeType(): BelongsTo

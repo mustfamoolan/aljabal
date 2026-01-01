@@ -147,12 +147,9 @@ class ProductService
             ]);
 
             // Upload new images if provided
-            if ($images !== null) {
-                // Delete old images
-                $this->deleteImages($product);
-                if (!empty($images)) {
-                    $this->uploadImages($product, $images);
-                }
+            if ($images !== null && !empty($images)) {
+                // Add new images to existing ones (don't replace)
+                $this->uploadImages($product, $images);
             }
 
             // Sync tags if provided
@@ -285,6 +282,9 @@ class ProductService
     public function uploadImages(Product $product, array $images): void
     {
         $uploadPath = "products/{$product->id}";
+        
+        // Get the highest image_order from existing images
+        $maxOrder = $product->images()->max('image_order') ?? 0;
 
         foreach ($images as $index => $image) {
             if ($image instanceof UploadedFile) {
@@ -293,7 +293,7 @@ class ProductService
                 ProductImage::create([
                     'product_id' => $product->id,
                     'image_path' => $imagePath,
-                    'image_order' => $index + 1,
+                    'image_order' => $maxOrder + $index + 1,
                 ]);
             }
         }
@@ -307,6 +307,31 @@ class ProductService
         foreach ($product->images as $image) {
             Storage::disk('public')->delete($image->image_path);
             $image->delete();
+        }
+    }
+
+    /**
+     * Delete a single product image
+     */
+    public function deleteImage(ProductImage $image): void
+    {
+        $product = $image->product;
+        $deletedOrder = $image->image_order;
+
+        // Delete file from storage
+        Storage::disk('public')->delete($image->image_path);
+
+        // Delete image record
+        $image->delete();
+
+        // Reorder remaining images
+        $remainingImages = $product->images()
+            ->where('image_order', '>', $deletedOrder)
+            ->orderBy('image_order')
+            ->get();
+
+        foreach ($remainingImages as $remainingImage) {
+            $remainingImage->update(['image_order' => $remainingImage->image_order - 1]);
         }
     }
 

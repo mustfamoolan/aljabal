@@ -7,6 +7,7 @@ use App\Http\Requests\Inventory\AddQuantityRequest;
 use App\Http\Requests\Inventory\StoreProductRequest;
 use App\Http\Requests\Inventory\UpdateProductRequest;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Services\Inventory\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,11 @@ class ProductController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.view')) {
+            abort(403, 'ليس لديك صلاحية لعرض المنتجات');
+        }
+
         $filters = $request->only(['search', 'category_id', 'supplier_id', 'product_type', 'is_active', 'low_stock', 'per_page']);
         $products = $this->productService->getAllProducts($filters);
 
@@ -40,6 +46,11 @@ class ProductController extends Controller
      */
     public function create(): View
     {
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.create')) {
+            abort(403, 'ليس لديك صلاحية لإنشاء منتجات');
+        }
+
         $mainCategories = \App\Models\Category::whereNull('parent_id')->where('is_active', true)->get();
         $suppliers = \App\Models\Supplier::where('is_active', true)->get();
         $tags = \App\Models\Tag::all();
@@ -52,7 +63,18 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request): RedirectResponse|JsonResponse
     {
-        $product = $this->productService->createProduct($request->validated());
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.create')) {
+            abort(403, 'ليس لديك صلاحية لإنشاء منتجات');
+        }
+
+        $data = $request->validated();
+        // If user is not admin, remove purchase_price from data
+        if (!auth()->user()->isAdmin()) {
+            unset($data['purchase_price']);
+        }
+
+        $product = $this->productService->createProduct($data);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -85,6 +107,11 @@ class ProductController extends Controller
      */
     public function edit(Product $product): View
     {
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.update')) {
+            abort(403, 'ليس لديك صلاحية لتعديل المنتجات');
+        }
+
         $product->load(['category', 'subcategory', 'supplier', 'images', 'tags']);
         $mainCategories = \App\Models\Category::whereNull('parent_id')->where('is_active', true)->get();
         $suppliers = \App\Models\Supplier::where('is_active', true)->get();
@@ -98,7 +125,18 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product): RedirectResponse|JsonResponse
     {
-        $product = $this->productService->updateProduct($product, $request->validated());
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.update')) {
+            abort(403, 'ليس لديك صلاحية لتعديل المنتجات');
+        }
+
+        // If user is not admin, remove purchase_price from data
+        $data = $request->validated();
+        if (!auth()->user()->isAdmin()) {
+            unset($data['purchase_price']);
+        }
+
+        $product = $this->productService->updateProduct($product, $data);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -116,6 +154,11 @@ class ProductController extends Controller
      */
     public function destroy(Product $product): RedirectResponse|JsonResponse
     {
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.delete')) {
+            abort(403, 'ليس لديك صلاحية لحذف المنتجات');
+        }
+
         $this->productService->deleteProduct($product);
 
         if (request()->expectsJson()) {
@@ -133,7 +176,18 @@ class ProductController extends Controller
      */
     public function addQuantity(AddQuantityRequest $request, Product $product): RedirectResponse|JsonResponse
     {
-        $purchaseHistory = $this->productService->addQuantity($product, $request->quantity, $request->validated());
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.update')) {
+            abort(403, 'ليس لديك صلاحية لتعديل المنتجات');
+        }
+
+        $data = $request->validated();
+        // If user is not admin, remove purchase_price from data
+        if (!auth()->user()->isAdmin()) {
+            unset($data['purchase_price']);
+        }
+
+        $purchaseHistory = $this->productService->addQuantity($product, $request->quantity, $data);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -174,5 +228,25 @@ class ProductController extends Controller
         }
 
         return view('inventory.products.grid', compact('products', 'categories'));
+    }
+
+    /**
+     * Delete a product image
+     */
+    public function deleteImage(ProductImage $image): JsonResponse
+    {
+        try {
+            $this->productService->deleteImage($image);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'تم حذف الصورة بنجاح',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'حدث خطأ أثناء حذف الصورة: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

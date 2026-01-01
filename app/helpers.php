@@ -37,3 +37,53 @@ if (!function_exists('format_currency')) {
         return $formatted . ' د.ع';
     }
 }
+
+if (!function_exists('permission_label')) {
+    /**
+     * Get Arabic label for permission name
+     *
+     * @param string $permissionName
+     * @return string
+     */
+    function permission_label($permissionName)
+    {
+        $parts = explode('.', $permissionName);
+        $module = $parts[0] ?? '';
+        $action = $parts[1] ?? '';
+
+        $moduleLabels = [
+            'users' => 'المستخدمين',
+            'roles' => 'الأدوار',
+            'permissions' => 'الصلاحيات',
+            'employees' => 'الموظفين',
+            'representatives' => 'المندوبين',
+            'admin' => 'لوحة التحكم',
+            'inventory' => 'المخزون',
+        ];
+
+        $actionLabels = [
+            'view' => 'عرض',
+            'create' => 'إنشاء',
+            'update' => 'تحديث',
+            'delete' => 'حذف',
+            'access' => 'الوصول',
+        ];
+
+        $moduleLabel = $moduleLabels[$module] ?? $module;
+        $actionLabel = $actionLabels[$action] ?? $action;
+
+        if ($module === 'inventory' && isset($parts[2])) {
+            $subModule = $parts[1];
+            $subAction = $parts[2];
+            $subModuleLabels = [
+                'products' => 'المنتجات',
+                'categories' => 'الفئات',
+                'suppliers' => 'الموردين',
+            ];
+            $moduleLabel = $subModuleLabels[$subModule] ?? $subModule;
+            $actionLabel = $actionLabels[$subAction] ?? $subAction;
+        }
+
+        return $moduleLabel . ' - ' . $actionLabel;
+    }
+}

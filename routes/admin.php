@@ -79,6 +79,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::put('products/{product}', [ProductController::class, 'update'])->name('admin.inventory.products.update');
         Route::delete('products/{product}', [ProductController::class, 'destroy'])->name('admin.inventory.products.destroy');
         Route::post('products/{product}/add-quantity', [ProductController::class, 'addQuantity'])->name('admin.inventory.products.add-quantity');
+        Route::delete('products/images/{image}', [ProductController::class, 'deleteImage'])->name('admin.inventory.products.images.delete');
 
         Route::post('categories', [CategoryController::class, 'store'])->name('admin.inventory.categories.store');
         Route::put('categories/{category}', [CategoryController::class, 'update'])->name('admin.inventory.categories.update');

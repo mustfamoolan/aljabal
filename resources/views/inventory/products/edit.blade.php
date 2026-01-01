@@ -153,6 +153,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        @if(auth()->user()->canViewPurchasePrice())
                         <div class="col-lg-4">
                             <div class="mb-3">
                                 <label for="purchase_price" class="form-label">سعر الشراء</label>
@@ -166,6 +167,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
                         <div class="col-lg-4">
                             <div class="mb-3">
                                 <label for="retail_price" class="form-label">سعر البيع مفرد</label>
@@ -415,23 +417,28 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h4 class="card-title">صور المنتج (4 صور كحد أقصى)</h4>
+                    <h4 class="card-title">صور المنتج (10 صور كحد أقصى)</h4>
                 </div>
                 <div class="card-body">
                     @if($product->images->isNotEmpty())
                         <div class="mb-3">
                             <label class="form-label">الصور الحالية</label>
-                            <div class="row g-2">
+                            <div class="row g-2" id="current-images">
                                 @foreach($product->images as $image)
-                                    <div class="col-3">
+                                    <div class="col-3" id="image-{{ $image->id }}">
                                         <div class="position-relative">
                                             <img src="{{ storage_url($image->image_path) }}" class="img-fluid rounded" alt="Image {{ $image->image_order }}">
+                                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1 delete-image-btn" 
+                                                    data-image-id="{{ $image->id }}" 
+                                                    onclick="deleteProductImage({{ $image->id }})">
+                                                <iconify-icon icon="solar:trash-bin-minimalistic-2-broken"></iconify-icon>
+                                            </button>
                                             <small class="d-block text-center mt-1">صورة {{ $image->image_order }}</small>
                                         </div>
                                     </div>
                                 @endforeach
                             </div>
-                            <small class="form-text text-muted">رفع صور جديدة سيستبدل الصور الحالية</small>
+                            <small class="form-text text-muted">يمكنك حذف الصور الحالية أو رفع صور جديدة (سيتم إضافتها للصور الحالية)</small>
                         </div>
                     @endif
                     <div class="mb-3">
@@ -443,7 +450,7 @@
                         @error('images.*')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
-                        <small class="form-text text-muted">يمكن رفع 4 صور كحد أقصى. حجم كل صورة يجب أن يكون أقل من 2 ميجابايت</small>
+                        <small class="form-text text-muted">يمكن رفع 10 صور كحد أقصى. حجم كل صورة يجب أن يكون أقل من 2 ميجابايت</small>
                     </div>
                     <div id="image-preview" class="row g-2"></div>
                 </div>
@@ -539,7 +546,7 @@
 
         imagesInput.addEventListener('change', function(e) {
             imagePreview.innerHTML = '';
-            const files = Array.from(e.target.files).slice(0, 4);
+            const files = Array.from(e.target.files).slice(0, 10);
 
             files.forEach((file, index) => {
                 if (file.type.startsWith('image/')) {
@@ -569,6 +576,59 @@
             files.forEach(file => dt.items.add(file));
             imagesInput.files = dt.files;
             imagesInput.dispatchEvent(new Event('change'));
+        };
+
+        // Delete product image
+        window.deleteProductImage = function(imageId) {
+            if (!confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
+                return;
+            }
+
+            const button = document.querySelector(`[data-image-id="${imageId}"]`);
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<iconify-icon icon="solar:loading-circle-bold-duotone"></iconify-icon>';
+            }
+
+            fetch(`/admin/inventory/products/images/${imageId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove image from DOM
+                    const imageElement = document.getElementById(`image-${imageId}`);
+                    if (imageElement) {
+                        imageElement.remove();
+                    }
+                    
+                    // Show success message
+                    if (typeof showToast !== 'undefined') {
+                        showToast('success', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                } else {
+                    alert(data.message || 'حدث خطأ أثناء حذف الصورة');
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = '<iconify-icon icon="solar:trash-bin-minimalistic-2-broken"></iconify-icon>';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('حدث خطأ أثناء حذف الصورة');
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<iconify-icon icon="solar:trash-bin-minimalistic-2-broken"></iconify-icon>';
+                }
+            });
         };
     });
 </script>

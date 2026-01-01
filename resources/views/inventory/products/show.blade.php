@@ -100,7 +100,7 @@
                     @else
                         <span class="text-muted">-</span>
                     @endif
-                    @if($product->purchase_price && $product->retail_price)
+                    @if($product->purchase_price && $product->retail_price && auth()->user()->canViewPurchasePrice())
                         <span class="fs-16 text-muted">(شراء: {{ format_currency($product->purchase_price) }})</span>
                     @endif
                 </h2>
@@ -188,9 +188,9 @@
                             @if($product->supplier)
                             <li><span class="fw-medium text-dark">المورد</span><span class="mx-2">:</span>{{ $product->supplier->name }}</li>
                             @endif
-                            @if($product->purchase_price)
-                            <li><span class="fw-medium text-dark">سعر الشراء</span><span class="mx-2">:</span>{{ format_currency($product->purchase_price) }}</li>
-                            @endif
+                    @if($product->purchase_price && auth()->user()->canViewPurchasePrice())
+                    <li><span class="fw-medium text-dark">سعر الشراء</span><span class="mx-2">:</span>{{ format_currency($product->purchase_price) }}</li>
+                    @endif
                             @if($product->retail_price)
                             <li><span class="fw-medium text-dark">سعر البيع مفرد</span><span class="mx-2">:</span>{{ format_currency($product->retail_price) }}</li>
                             @endif
@@ -251,8 +251,10 @@
                             <tr>
                                 <th>التاريخ</th>
                                 <th>الكمية</th>
+                                @if(auth()->user()->canViewPurchasePrice())
                                 <th>سعر الشراء</th>
                                 <th>الإجمالي</th>
+                                @endif
                                 <th>المورد</th>
                                 <th>المسؤول</th>
                             </tr>
@@ -262,8 +264,10 @@
                             <tr>
                                 <td>{{ $purchase->purchase_date->format('d M Y') }}</td>
                                 <td>{{ $purchase->quantity }}</td>
+                                @if(auth()->user()->canViewPurchasePrice())
                                 <td>{{ format_currency($purchase->purchase_price) }}</td>
                                 <td>{{ format_currency($purchase->total_amount) }}</td>
+                                @endif
                                 <td>{{ $purchase->supplier?->name ?? '-' }}</td>
                                 <td>{{ $purchase->createdBy?->name ?? '-' }}</td>
                             </tr>
@@ -293,12 +297,14 @@
                                 <input type="number" id="quantity" name="quantity" class="form-control" placeholder="0" min="1" required>
                             </div>
                         </div>
+                        @if(auth()->user()->canViewPurchasePrice())
                         <div class="col-lg-3">
                             <div class="mb-3">
                                 <label for="purchase_price" class="form-label">سعر الشراء</label>
                                 <input type="number" step="0.01" id="purchase_price" name="purchase_price" class="form-control" placeholder="0.00">
                             </div>
                         </div>
+                        @endif
                         <div class="col-lg-3">
                             <div class="mb-3">
                                 <label for="supplier_id" class="form-label">المورد</label>
