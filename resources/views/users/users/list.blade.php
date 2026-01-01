@@ -134,9 +134,9 @@
                                                      class="avatar-sm rounded-circle border border-2 border-primary"
                                                      style="width: 40px; height: 40px; object-fit: cover;">
                                             @else
-                                                <span class="avatar-sm d-flex align-items-center justify-content-center bg-{{ ['primary', 'info', 'success', 'warning'][$loop->index % 4] }}-subtle text-{{ ['primary', 'info', 'success', 'warning'][$loop->index % 4] }} rounded-circle fw-bold">
-                                                    {{ strtoupper(substr($user->name, 0, 1)) }}
-                                                </span>
+                                            <span class="avatar-sm d-flex align-items-center justify-content-center bg-{{ ['primary', 'info', 'success', 'warning'][$loop->index % 4] }}-subtle text-{{ ['primary', 'info', 'success', 'warning'][$loop->index % 4] }} rounded-circle fw-bold">
+                                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                                            </span>
                                             @endif
                                         </div>
                                         <div>

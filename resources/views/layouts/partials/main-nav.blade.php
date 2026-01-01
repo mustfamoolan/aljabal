@@ -192,14 +192,14 @@
                     <span class="nav-text"> الأدوار </span>
                 </a>
                 <div class="collapse" id="sidebarRoles">
-                    <ul class="nav sub-navbar-nav">
-                        <li class="sub-nav-item">
-                            <a class="sub-nav-link" href="{{ route('users.role.list')}}">القائمة</a>
-                        </li>
+                        <ul class="nav sub-navbar-nav">
+                            <li class="sub-nav-item">
+                                <a class="sub-nav-link" href="{{ route('users.role.list')}}">القائمة</a>
+                            </li>
                         @if(auth()->user()->isAdmin() || auth()->user()->can('roles.create'))
-                        <li class="sub-nav-item">
-                            <a class="sub-nav-link" href="{{ route('users.role.create')}}">إنشاء</a>
-                        </li>
+                            <li class="sub-nav-item">
+                                <a class="sub-nav-link" href="{{ route('users.role.create')}}">إنشاء</a>
+                            </li>
                         @endif
                     </ul>
                 </div>

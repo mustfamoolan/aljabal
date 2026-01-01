@@ -16,7 +16,6 @@
 /public/hot
 /public/storage
 !/public/storage/.gitignore
-
 /storage/*.key
 /storage/pail
 Homestead.json

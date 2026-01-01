@@ -607,7 +607,8 @@
                 button.innerHTML = '<iconify-icon icon="solar:loading-circle-bold-duotone"></iconify-icon>';
             }
 
-            fetch(`/admin/inventory/products/images/${imageId}`, {
+            const productId = {{ $product->id }};
+            fetch(`/admin/inventory/products/${productId}/images/${imageId}`, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',

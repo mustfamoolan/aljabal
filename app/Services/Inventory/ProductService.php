@@ -149,7 +149,7 @@ class ProductService
             // Upload new images if provided
             if ($images !== null && !empty($images)) {
                 // Add new images to existing ones (don't replace)
-                $this->uploadImages($product, $images);
+                    $this->uploadImages($product, $images);
             }
 
             // Sync tags if provided

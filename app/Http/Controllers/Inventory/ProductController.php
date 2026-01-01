@@ -233,8 +233,24 @@ class ProductController extends Controller
     /**
      * Delete a product image
      */
-    public function deleteImage(ProductImage $image): JsonResponse
+    public function deleteImage(Product $product, ProductImage $image): JsonResponse
     {
+        // Check permission (allow if user is admin or has permission)
+        if (!auth()->user()->isAdmin() && !auth()->user()->can('inventory.products.update')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ليس لديك صلاحية لحذف صور المنتجات',
+            ], 403);
+        }
+
+        // Ensure the image belongs to the product
+        if ($image->product_id !== $product->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الصورة لا تنتمي لهذا المنتج',
+            ], 404);
+        }
+
         try {
             $this->productService->deleteImage($image);
 

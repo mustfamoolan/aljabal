@@ -215,8 +215,8 @@
                             <li><span class="fw-medium text-dark">المورد</span><span class="mx-2">:</span>{{ $product->supplier->name }}</li>
                             @endif
                     @if($product->purchase_price && auth()->user()->canViewPurchasePrice())
-                    <li><span class="fw-medium text-dark">سعر الشراء</span><span class="mx-2">:</span>{{ format_currency($product->purchase_price) }}</li>
-                    @endif
+                            <li><span class="fw-medium text-dark">سعر الشراء</span><span class="mx-2">:</span>{{ format_currency($product->purchase_price) }}</li>
+                            @endif
                             @if($product->retail_price)
                             <li><span class="fw-medium text-dark">سعر البيع مفرد</span><span class="mx-2">:</span>{{ format_currency($product->retail_price) }}</li>
                             @endif
