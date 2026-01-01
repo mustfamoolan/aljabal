@@ -19,21 +19,29 @@ class StorageHelper
             return null;
         }
 
-        // Check if symbolic link exists
+        // Normalize path (remove leading slashes)
+        $path = ltrim($path, '/');
+
+        // First, check if the file actually exists in storage
+        $storagePath = storage_path('app/public/' . $path);
+        if (!file_exists($storagePath)) {
+            return null;
+        }
+
+        // Check if symbolic link exists and is valid
+        $storageLinkPath = public_path('storage');
         $publicPath = public_path('storage/' . $path);
-        if (file_exists($publicPath) || is_link(public_path('storage'))) {
-            // Use standard asset() if symbolic link exists
+
+        // If symbolic link exists and file is accessible through it
+        if (is_link($storageLinkPath) && file_exists($publicPath)) {
+            // Use standard asset() if symbolic link exists and works
             return asset('storage/' . $path);
         }
 
-        // Otherwise, use direct URL to serve file directly from storage
-        $storagePath = storage_path('app/public/' . $path);
-        if (file_exists($storagePath)) {
-            // Use direct URL instead of route to avoid route not found errors
-            return url('/storage/' . $path);
-        }
-
-        return null;
+        // If symbolic link exists but file is not accessible through it
+        // or if symbolic link doesn't exist, use route as fallback
+        // This route is defined in routes/web.php and serves files directly from storage
+        return url('/storage/' . $path);
     }
 
     /**
