@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WithdrawalRequestController;
 use App\Http\Controllers\Admin\WithdrawalSettingsController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\SupplierController;
@@ -64,7 +65,7 @@ Route::get('/storage/{path}', function ($path) {
 // Redirect root to admin login if not authenticated
 Route::get('/', function () {
     if (auth()->check()) {
-        return redirect('/dashboards/index');
+        return redirect()->route('home.index');
     }
     if (auth()->guard('representative')->check()) {
         return redirect('/representative/dashboard');
@@ -150,8 +151,7 @@ Route::group(['prefix' => '/', 'middleware' => ['auth', 'admin']], function () {
     // Withdrawal Settings routes
     Route::get('admin/settings/withdrawal', [WithdrawalSettingsController::class, 'index'])->name('admin.settings.withdrawal.index');
 
-    // General Settings routes
-    Route::get('general/settings', [\App\Http\Controllers\General\SettingsController::class, 'index'])->name('general.settings.index');
+    // General Settings routes are handled in routes/admin.php
 
     // Orders routes (admin)
     Route::get('admin/orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('admin.orders.index');
@@ -172,6 +172,9 @@ Route::group(['prefix' => '/', 'middleware' => ['auth', 'admin']], function () {
     Route::post('notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.unread');
     Route::post('notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+
+    // Home page route
+    Route::get('home', [HomeController::class, 'index'])->name('home.index');
 
     // POST/PUT/DELETE routes are handled in routes/admin.php
 

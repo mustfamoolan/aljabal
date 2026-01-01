@@ -50,6 +50,6 @@ class LoginController extends Controller
         // Clear any intended URL to avoid redirecting to logout or other unwanted pages
         $request->session()->forget('url.intended');
         
-        return redirect('/dashboards/index');
+        return redirect()->route('home.index');
     }
 }

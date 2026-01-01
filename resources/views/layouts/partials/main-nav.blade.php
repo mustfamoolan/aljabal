@@ -23,6 +23,15 @@
             <li class="menu-title">عام</li>
 
             <li class="nav-item">
+                <a class="nav-link" href="{{ route('home.index') }}">
+                         <span class="nav-icon">
+                              <iconify-icon icon="solar:home-smile-bold-duotone"></iconify-icon>
+                         </span>
+                    <span class="nav-text"> الصفحة الرئيسية </span>
+                </a>
+            </li>
+
+            <li class="nav-item">
                 <a class="nav-link" href="{{ route('second', [ 'dashboards' , 'index']) }}">
                          <span class="nav-icon">
                               <iconify-icon icon="solar:widget-5-bold-duotone"></iconify-icon>
