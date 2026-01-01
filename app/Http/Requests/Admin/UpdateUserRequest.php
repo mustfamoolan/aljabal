@@ -43,6 +43,7 @@ class UpdateUserRequest extends FormRequest
                 Rule::exists('employee_types', 'id'),
             ],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'delete_image' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

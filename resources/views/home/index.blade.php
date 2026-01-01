@@ -23,6 +23,7 @@
 
     <div class="row">
         <!-- المنتجات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('inventory.products.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -38,8 +39,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الفئات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('inventory.categories.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -55,8 +58,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الموردين -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('inventory.suppliers.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -72,8 +77,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الطلبات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -89,8 +96,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- طلبات السحب -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -106,8 +115,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الإعدادات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -123,8 +134,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- التاغات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -140,8 +153,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- المندوبين -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('representatives.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -157,8 +172,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الحسابات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -174,8 +191,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- المستخدمين -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('users.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -191,8 +210,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الأدوار -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('roles.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -208,8 +229,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الصلاحيات -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('permissions.view'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -225,8 +248,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- أنواع الموظفين -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -242,8 +267,10 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- إعدادات عمولة التجهيز -->
+        @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access'))
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <div class="card h-100">
                 <div class="card-body text-center">
@@ -259,6 +286,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <!-- الإشعارات -->
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">

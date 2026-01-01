@@ -122,11 +122,16 @@
                             <div class="mb-3">
                                 <label for="image" class="form-label">صورة البروفايل</label>
                                 @if($user->image && $user->image_url)
-                                    <div class="mb-2">
+                                    <div class="mb-2 position-relative d-inline-block">
                                         <img src="{{ $user->image_url }}" alt="{{ $user->name }}" 
                                              class="img-thumbnail" style="max-width: 150px; max-height: 150px;">
-                                        <p class="text-muted small mb-0">الصورة الحالية</p>
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                                                onclick="deleteUserImage()" title="حذف الصورة">
+                                            <iconify-icon icon="solar:trash-bin-minimalistic-2-broken"></iconify-icon>
+                                        </button>
+                                        <p class="text-muted small mb-0 mt-1">الصورة الحالية</p>
                                     </div>
+                                    <input type="hidden" name="delete_image" id="delete_image" value="0">
                                 @endif
                                 <input type="file" id="image" name="image" class="form-control @error('image') is-invalid @enderror"
                                        accept="image/jpeg,image/png,image/jpg,image/gif">
@@ -193,5 +198,20 @@
             });
         }
     });
+
+    // Delete user image
+    function deleteUserImage() {
+        if (confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
+            const deleteImageInput = document.getElementById('delete_image');
+            if (deleteImageInput) {
+                deleteImageInput.value = '1';
+            }
+            // Hide the image preview
+            const imageContainer = document.querySelector('.position-relative.d-inline-block');
+            if (imageContainer) {
+                imageContainer.style.display = 'none';
+            }
+        }
+    }
 </script>
 @endsection

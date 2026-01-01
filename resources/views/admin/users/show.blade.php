@@ -10,6 +10,22 @@
             </div>
             <div class="card-body">
                 <div class="row">
+                    <div class="col-lg-12 mb-4">
+                        <div class="text-center">
+                            <div class="position-relative d-inline-block">
+                                @if($user->image && $user->image_url)
+                                    <img src="{{ $user->image_url }}" alt="{{ $user->name }}" 
+                                         class="avatar-lg rounded-circle border border-3 border-primary" 
+                                         style="width: 120px; height: 120px; object-fit: cover;">
+                                @else
+                                    <div class="avatar-lg bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center border border-3 border-primary">
+                                        <span class="text-primary fw-bold fs-48">{{ substr($user->name, 0, 1) }}</span>
+                                    </div>
+                                @endif
+                            </div>
+                            <h4 class="mt-3 mb-0">{{ $user->name }}</h4>
+                        </div>
+                    </div>
                     <div class="col-lg-6">
                         <div class="mb-3">
                             <label class="form-label">اسم المستخدم</label>

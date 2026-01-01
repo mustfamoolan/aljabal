@@ -127,6 +127,14 @@ class UserService
             $updateData['is_active'] = $data['is_active'];
         }
 
+        // Handle image deletion
+        if (isset($data['delete_image']) && $data['delete_image']) {
+            if ($user->image) {
+                Storage::disk('public')->delete($user->image);
+            }
+            $updateData['image'] = null;
+        }
+        
         // Handle image upload
         if (isset($data['image']) && $data['image'] instanceof UploadedFile) {
             // Delete old image if exists
