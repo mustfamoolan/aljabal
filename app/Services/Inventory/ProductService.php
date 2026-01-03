@@ -50,6 +50,14 @@ class ProductService
             });
         }
 
+        if (isset($filters['author'])) {
+            $query->where('author', 'like', "%{$filters['author']}%");
+        }
+
+        if (isset($filters['publisher'])) {
+            $query->where('publisher', 'like', "%{$filters['publisher']}%");
+        }
+
         if (isset($filters['product_type'])) {
             $query->where('product_type', $filters['product_type']);
         }

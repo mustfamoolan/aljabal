@@ -160,11 +160,48 @@
                                 @if($product->sku)
                                     <p class="text-muted mb-1 fs-13">SKU: {{ $product->sku }}</p>
                                 @endif
-                                <div class="my-1">
+                                @if($product->author || $product->publisher)
+                                    <div class="mb-1 fs-12">
+                                        @if($product->author)
+                                            <div>
+                                                <span class="text-muted">المؤلف:</span>
+                                                <a href="{{ route('inventory.products.index', ['author' => $product->author]) }}"
+                                                    class="text-primary text-decoration-underline ms-1">
+                                                    {{ $product->author }}
+                                                </a>
+                                            </div>
+                                        @endif
+                                        @if($product->publisher)
+                                            <div>
+                                                <span class="text-muted">دار النشر:</span>
+                                                <a href="{{ route('inventory.products.index', ['publisher' => $product->publisher]) }}"
+                                                    class="text-primary text-decoration-underline ms-1">
+                                                    {{ $product->publisher }}
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+                                <div class="my-1 d-flex flex-wrap gap-1">
                                     <span
                                         class="badge bg-{{ $product->is_original ? 'primary' : 'secondary' }}-subtle text-{{ $product->is_original ? 'primary' : 'secondary' }} py-1 px-2">
                                         {{ $product->is_original ? 'أصلي' : 'عادي' }}
                                     </span>
+                                    @if($product->is_hardcover !== null)
+                                        <span class="badge bg-{{ $product->is_hardcover ? 'success' : 'secondary' }}-subtle text-{{ $product->is_hardcover ? 'success' : 'secondary' }} py-1 px-2">
+                                            {{ $product->is_hardcover ? 'هاردكفر' : 'ورقي' }}
+                                        </span>
+                                    @endif
+                                    @if($product->size)
+                                        <span class="badge bg-info-subtle text-info py-1 px-2">
+                                            {{ $product->size->label() }}
+                                        </span>
+                                    @endif
+                                    @if($product->page_count)
+                                        <span class="badge bg-warning-subtle text-warning py-1 px-2">
+                                            {{ $product->page_count }} صفحة
+                                        </span>
+                                    @endif
                                     @if($product->min_quantity !== null && $product->quantity <= $product->min_quantity)
                                         <span class="badge bg-danger-subtle text-danger py-1 px-2">
                                             <iconify-icon icon="solar:danger-triangle-bold-duotone"></iconify-icon>
@@ -172,6 +209,16 @@
                                         </span>
                                     @endif
                                 </div>
+                                @if($product->tags->isNotEmpty())
+                                    <div class="my-1 d-flex flex-wrap gap-1">
+                                        @foreach($product->tags as $tag)
+                                            <a href="{{ route('inventory.products.index', ['tag_id' => $tag->id]) }}"
+                                                class="badge bg-primary-subtle text-primary py-1 px-2">
+                                                {{ $tag->name }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                @endif
                                 <h4 class="fw-semibold text-dark mt-2">
                                     @if($product->retail_price)
                                         {{ format_currency($product->retail_price) }}

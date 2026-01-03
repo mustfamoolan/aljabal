@@ -40,16 +40,6 @@
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label for="sku" class="form-label">كود المنتج (SKU)</label>
-                                <input type="text" id="sku" name="sku" class="form-control @error('sku') is-invalid @enderror"
-                                       placeholder="سيتم توليده تلقائياً إذا تركت فارغاً" value="{{ old('sku', $product->sku) }}">
-                                @error('sku')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="mb-3">
                                 <label for="is_original" class="form-label">نوع المنتج</label>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="is_original" name="is_original" value="1" {{ old('is_original', $product->is_original) ? 'checked' : '' }}>
@@ -158,8 +148,8 @@
                                 <label for="purchase_price" class="form-label">سعر الشراء</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="0.01" id="purchase_price" name="purchase_price" class="form-control @error('purchase_price') is-invalid @enderror"
-                                           placeholder="0.00" value="{{ old('purchase_price', $product->purchase_price) }}">
+                                    <input type="number" step="1" id="purchase_price" name="purchase_price" class="form-control @error('purchase_price') is-invalid @enderror"
+                                           placeholder="0" value="{{ old('purchase_price', $product->purchase_price) }}">
                                     @error('purchase_price')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -172,8 +162,8 @@
                                 <label for="retail_price" class="form-label">سعر البيع مفرد</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="0.01" id="retail_price" name="retail_price" class="form-control @error('retail_price') is-invalid @enderror"
-                                           placeholder="0.00" value="{{ old('retail_price', $product->retail_price) }}">
+                                    <input type="number" step="1" id="retail_price" name="retail_price" class="form-control @error('retail_price') is-invalid @enderror"
+                                           placeholder="0" value="{{ old('retail_price', $product->retail_price) }}">
                                     @error('retail_price')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -185,8 +175,8 @@
                                 <label for="wholesale_price" class="form-label">سعر البيع جملة</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input type="number" step="0.01" id="wholesale_price" name="wholesale_price" class="form-control @error('wholesale_price') is-invalid @enderror"
-                                           placeholder="0.00" value="{{ old('wholesale_price', $product->wholesale_price) }}">
+                                    <input type="number" step="1" id="wholesale_price" name="wholesale_price" class="form-control @error('wholesale_price') is-invalid @enderror"
+                                           placeholder="0" value="{{ old('wholesale_price', $product->wholesale_price) }}">
                                     @error('wholesale_price')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -483,6 +473,21 @@
                         <label class="form-check-label" for="is_active">
                             نشط
                         </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h4 class="card-title">كود المنتج (SKU)</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" id="sku" name="sku" class="form-control @error('sku') is-invalid @enderror"
+                               placeholder="سيتم توليده تلقائياً إذا تركت فارغاً" value="{{ old('sku', $product->sku) }}">
+                        @error('sku')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                        <small class="form-text text-muted">اتركه فارغاً ليتم توليده تلقائياً</small>
                     </div>
                 </div>
             </div>

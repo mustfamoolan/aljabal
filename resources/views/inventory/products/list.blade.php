@@ -97,11 +97,11 @@
             <div class="card">
                 <div class="card-body">
                     <form method="GET" action="{{ route('inventory.products.index') }}" class="row g-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <input type="text" name="search" class="form-control" placeholder="ابحث عن منتج..."
                                 value="{{ request('search') }}">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <select name="category_id" class="form-select">
                                 <option value="">جميع الفئات الرئيسية</option>
                                 @foreach(\App\Models\Category::whereNull('parent_id')->where('is_active', true)->get() as $category)
@@ -111,7 +111,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <select name="tag_id" class="form-select">
                                 <option value="">جميع التاغات</option>
                                 @foreach(\App\Models\Tag::orderBy('name')->get() as $tag)
@@ -121,7 +121,15 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
+                            <input type="text" name="author" class="form-control" placeholder="المؤلف/الفنان"
+                                value="{{ request('author') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="text" name="publisher" class="form-control" placeholder="دار النشر"
+                                value="{{ request('publisher') }}">
+                        </div>
+                        <div class="col-md-2">
                             <button type="submit" class="btn btn-primary w-100">تصفية</button>
                         </div>
                     </form>
@@ -161,6 +169,7 @@
                                     <th>النوع</th>
                                     <th>الفئة</th>
                                     <th>المورد</th>
+                                    <th>المواصفات</th>
                                     <th>الأسعار</th>
                                     <th>المخزون</th>
                                     <th>الحالة</th>
@@ -231,6 +240,45 @@
                                             @endif
                                         </td>
                                         <td>
+                                            <div class="d-flex flex-column gap-1 fs-12">
+                                                @if($product->author)
+                                                    <div>
+                                                        <span class="text-muted">المؤلف:</span>
+                                                        <a href="{{ route('inventory.products.index', ['author' => $product->author]) }}"
+                                                            class="text-primary text-decoration-underline ms-1">
+                                                            {{ $product->author }}
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                                @if($product->publisher)
+                                                    <div>
+                                                        <span class="text-muted">دار النشر:</span>
+                                                        <a href="{{ route('inventory.products.index', ['publisher' => $product->publisher]) }}"
+                                                            class="text-primary text-decoration-underline ms-1">
+                                                            {{ $product->publisher }}
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    @if($product->is_hardcover !== null)
+                                                        <span class="badge bg-{{ $product->is_hardcover ? 'success' : 'secondary' }}-subtle text-{{ $product->is_hardcover ? 'success' : 'secondary' }} py-0 px-1">
+                                                            {{ $product->is_hardcover ? 'هاردكفر' : 'ورقي' }}
+                                                        </span>
+                                                    @endif
+                                                    @if($product->size)
+                                                        <span class="badge bg-info-subtle text-info py-0 px-1">
+                                                            {{ $product->size->label() }}
+                                                        </span>
+                                                    @endif
+                                                    @if($product->page_count)
+                                                        <span class="badge bg-warning-subtle text-warning py-0 px-1">
+                                                            {{ $product->page_count }} صفحة
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
                                             <div class="d-flex flex-column gap-1">
                                                 @if($product->purchase_price && auth()->user()->canViewPurchasePrice())
                                                     <small class="text-muted">شراء:
@@ -291,7 +339,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center py-4">
+                                        <td colspan="10" class="text-center py-4">
                                             <p class="text-muted mb-0">لا توجد منتجات</p>
                                         </td>
                                     </tr>

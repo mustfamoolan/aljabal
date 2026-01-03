@@ -31,7 +31,7 @@ class ProductController extends Controller
             abort(403, 'ليس لديك صلاحية لعرض المنتجات');
         }
 
-        $filters = $request->only(['search', 'category_id', 'supplier_id', 'product_type', 'is_active', 'low_stock', 'per_page']);
+        $filters = $request->only(['search', 'category_id', 'supplier_id', 'product_type', 'is_active', 'low_stock', 'per_page', 'author', 'publisher', 'tag_id']);
         $products = $this->productService->getAllProducts($filters);
 
         if ($request->expectsJson()) {
@@ -219,7 +219,7 @@ class ProductController extends Controller
      */
     public function grid(Request $request): View|JsonResponse
     {
-        $filters = $request->only(['search', 'category_id', 'supplier_id', 'product_type', 'is_active', 'low_stock', 'per_page']);
+        $filters = $request->only(['search', 'category_id', 'supplier_id', 'product_type', 'is_active', 'low_stock', 'per_page', 'author', 'publisher', 'tag_id']);
         $products = $this->productService->getAllProducts($filters);
         $categories = \App\Models\Category::where('is_active', true)->get();
 

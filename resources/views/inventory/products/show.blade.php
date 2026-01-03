@@ -133,6 +133,23 @@
                             @endforeach
                         </div>
                     @endif
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        @if($product->is_hardcover !== null)
+                            <span class="badge bg-{{ $product->is_hardcover ? 'success' : 'secondary' }}-subtle text-{{ $product->is_hardcover ? 'success' : 'secondary' }} py-1 px-2">
+                                {{ $product->is_hardcover ? 'هاردكفر' : 'ورقي' }}
+                            </span>
+                        @endif
+                        @if($product->size)
+                            <span class="badge bg-info-subtle text-info py-1 px-2">
+                                {{ $product->size->label() }}
+                            </span>
+                        @endif
+                        @if($product->page_count)
+                            <span class="badge bg-warning-subtle text-warning py-1 px-2">
+                                {{ $product->page_count }} صفحة
+                            </span>
+                        @endif
+                    </div>
                     <h2 class="fw-medium my-3">
                         @if($product->retail_price)
                             {{ format_currency($product->retail_price) }}
@@ -210,11 +227,21 @@
                                 @endif
                                 @if($product->author)
                                     <li><span class="fw-medium text-dark">المؤلف</span><span
-                                            class="mx-2">:</span>{{ $product->author }}</li>
+                                            class="mx-2">:</span>
+                                        <a href="{{ route('inventory.products.index', ['author' => $product->author]) }}"
+                                            class="text-primary text-decoration-underline">
+                                            {{ $product->author }}
+                                        </a>
+                                    </li>
                                 @endif
                                 @if($product->publisher)
                                     <li><span class="fw-medium text-dark">دار النشر</span><span
-                                            class="mx-2">:</span>{{ $product->publisher }}</li>
+                                            class="mx-2">:</span>
+                                        <a href="{{ route('inventory.products.index', ['publisher' => $product->publisher]) }}"
+                                            class="text-primary text-decoration-underline">
+                                            {{ $product->publisher }}
+                                        </a>
+                                    </li>
                                 @endif
                                 @if($product->category)
                                     <li><span class="fw-medium text-dark">الفئة الرئيسية</span><span
