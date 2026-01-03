@@ -50,18 +50,17 @@
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label for="product_type" class="form-label">نوع المنتج <span class="text-danger">*</span></label>
-                                <select id="product_type" name="product_type" class="form-select @error('product_type') is-invalid @enderror" required>
-                                    <option value="">اختر النوع</option>
-                                    @foreach(\App\Enums\ProductType::cases() as $type)
-                                        <option value="{{ $type->value }}" {{ old('product_type', $product->product_type->value) === $type->value ? 'selected' : '' }}>
-                                            {{ $type->label() }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('product_type')
-                                    <div class="invalid-feedback">{{ $message }}</div>
+                                <label for="is_original" class="form-label">نوع المنتج</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is_original" name="is_original" value="1" {{ old('is_original', $product->is_original) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="is_original">
+                                        <span id="product_type_label">{{ old('is_original', $product->is_original) ? 'أصلي' : 'عادي' }}</span>
+                                    </label>
+                                </div>
+                                @error('is_original')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
                                 @enderror
+                                <small class="form-text text-muted">قم بتفعيل المفتاح إذا كان المنتج أصلي</small>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -327,29 +326,23 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-lg-4">
-                            <div class="mb-3">
-                                <label for="weight" class="form-label">الوزن (كيلوغرام)</label>
-                                <input type="number" step="0.01" id="weight" name="weight" class="form-control @error('weight') is-invalid @enderror"
-                                       placeholder="0.00" value="{{ old('weight', $product->weight) }}" min="0">
-                                @error('weight')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="form-text text-muted">الوزن بالكيلوغرام</small>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-6">
                             <div class="mb-3">
                                 <label for="size" class="form-label">الحجم</label>
-                                <input type="text" id="size" name="size" class="form-control @error('size') is-invalid @enderror"
-                                       placeholder="مثال: 20x15x2 سم" value="{{ old('size', $product->size) }}">
+                                <select id="size" name="size" class="form-select @error('size') is-invalid @enderror">
+                                    <option value="">اختر الحجم</option>
+                                    @foreach(\App\Enums\SizeType::cases() as $sizeType)
+                                        <option value="{{ $sizeType->value }}" {{ old('size', $product->size?->value) === $sizeType->value ? 'selected' : '' }}>
+                                            {{ $sizeType->label() }}
+                                        </option>
+                                    @endforeach
+                                </select>
                                 @error('size')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="form-text text-muted">مثال: 20x15x2 سم أو 17x24 سم</small>
                             </div>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-6">
                             <div class="mb-3">
                                 <label for="page_count" class="form-label">عدد الصفحات</label>
                                 <input type="number" id="page_count" name="page_count" class="form-control @error('page_count') is-invalid @enderror"
@@ -357,6 +350,21 @@
                                 @error('page_count')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label for="is_hardcover" class="form-label">نوع الغلاف</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="is_hardcover" name="is_hardcover" value="1" {{ old('is_hardcover', $product->is_hardcover) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="is_hardcover">
+                                        <span id="cover_type_label">{{ old('is_hardcover', $product->is_hardcover) ? 'هاردكفر' : 'ورقي' }}</span>
+                                    </label>
+                                </div>
+                                @error('is_hardcover')
+                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                @enderror
+                                <small class="form-text text-muted">قم بتفعيل المفتاح إذا كان الغلاف هاردكفر</small>
                             </div>
                         </div>
                     </div>
@@ -397,16 +405,6 @@
                                 <textarea id="long_description" name="long_description" class="form-control @error('long_description') is-invalid @enderror" rows="5"
                                           placeholder="وصف تفصيلي للمنتج">{{ old('long_description', $product->long_description) }}</textarea>
                                 @error('long_description')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label for="color" class="form-label">اللون</label>
-                                <input type="text" id="color" name="color" class="form-control @error('color') is-invalid @enderror"
-                                       placeholder="أدخل اللون" value="{{ old('color', $product->color) }}">
-                                @error('color')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -556,6 +554,24 @@
 
         unitTypeSelect.addEventListener('change', toggleUnitFields);
         toggleUnitFields(); // Check on page load
+
+        // Toggle product type label
+        const isOriginalSwitch = document.getElementById('is_original');
+        const productTypeLabel = document.getElementById('product_type_label');
+        if (isOriginalSwitch && productTypeLabel) {
+            isOriginalSwitch.addEventListener('change', function() {
+                productTypeLabel.textContent = this.checked ? 'أصلي' : 'عادي';
+            });
+        }
+
+        // Toggle cover type label
+        const isHardcoverSwitch = document.getElementById('is_hardcover');
+        const coverTypeLabel = document.getElementById('cover_type_label');
+        if (isHardcoverSwitch && coverTypeLabel) {
+            isHardcoverSwitch.addEventListener('change', function() {
+                coverTypeLabel.textContent = this.checked ? 'هاردكفر' : 'ورقي';
+            });
+        }
 
         // Image preview
         const imagesInput = document.getElementById('images');

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Inventory;
 
-use App\Enums\ProductType;
+use App\Enums\SizeType;
 use App\Enums\UnitType;
 use App\Enums\WeightUnit;
 use Illuminate\Foundation\Http\FormRequest;
@@ -30,7 +30,7 @@ class UpdateProductRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'sku' => ['sometimes', 'nullable', 'string', Rule::unique('products', 'sku')->ignore($productId)],
-            'product_type' => ['sometimes', 'required', Rule::enum(ProductType::class)],
+            'is_original' => ['sometimes', 'nullable', 'boolean'],
             'category_id' => ['sometimes', 'nullable', 'exists:categories,id'],
             'subcategory_id' => ['sometimes', 'nullable', 'exists:categories,id'],
             'supplier_id' => ['sometimes', 'nullable', 'exists:suppliers,id'],
@@ -44,16 +44,15 @@ class UpdateProductRequest extends FormRequest
             'unit_type' => ['sometimes', 'nullable', Rule::enum(UnitType::class)],
             'weight_unit' => ['sometimes', 'nullable', Rule::enum(WeightUnit::class)],
             'weight_value' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'weight' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'size' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'size' => ['sometimes', 'nullable', Rule::enum(SizeType::class)],
             'page_count' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'is_hardcover' => ['sometimes', 'nullable', 'boolean'],
             'carton_quantity' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'set_quantity' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'shelf' => ['sometimes', 'nullable', 'string', 'max:50'],
             'compartment' => ['sometimes', 'nullable', 'string', 'max:50'],
             'short_description' => ['sometimes', 'nullable', 'string'],
             'long_description' => ['sometimes', 'nullable', 'string'],
-            'color' => ['sometimes', 'nullable', 'string', 'max:100'],
             'video_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'images' => ['sometimes', 'nullable', 'array', 'max:10'],
             'images.*' => ['image', 'max:2048'],
@@ -71,7 +70,6 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name.required' => 'اسم المنتج مطلوب',
-            'product_type.required' => 'نوع المنتج مطلوب',
             'sku.unique' => 'كود المنتج مستخدم بالفعل',
             'images.max' => 'يمكن رفع 10 صور كحد أقصى',
             'images.*.image' => 'يجب أن تكون الملفات صور',

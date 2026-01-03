@@ -2,7 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\ProductType;
+use App\Enums\CoverType;
+use App\Enums\SizeType;
 use App\Enums\UnitType;
 use App\Enums\WeightUnit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ class Product extends Model
     protected $fillable = [
         'name',
         'sku',
-        'product_type',
+        'is_original',
         'category_id',
         'subcategory_id',
         'supplier_id',
@@ -33,16 +34,15 @@ class Product extends Model
         'unit_type',
         'weight_unit',
         'weight_value',
-        'weight',
         'size',
         'page_count',
+        'is_hardcover',
         'carton_quantity',
         'set_quantity',
         'shelf',
         'compartment',
         'short_description',
         'long_description',
-        'color',
         'video_url',
         'first_purchase_date',
         'last_purchase_date',
@@ -52,14 +52,15 @@ class Product extends Model
     protected function casts(): array
     {
         return [
-            'product_type' => ProductType::class,
+            'is_original' => 'boolean',
             'unit_type' => UnitType::class,
             'weight_unit' => WeightUnit::class,
+            'size' => SizeType::class,
+            'is_hardcover' => 'boolean',
             'purchase_price' => 'decimal:2',
             'retail_price' => 'decimal:2',
             'wholesale_price' => 'decimal:2',
             'weight_value' => 'decimal:2',
-            'weight' => 'decimal:2',
             'first_purchase_date' => 'date',
             'last_purchase_date' => 'date',
             'is_active' => 'boolean',

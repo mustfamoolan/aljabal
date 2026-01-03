@@ -477,7 +477,7 @@
     ]
   },
   "resources/js/components/order-cart.js": {
-    "file": "assets/order-cart-DIa9uLQa.js",
+    "file": "assets/order-cart-BpfkdzGX.js",
     "name": "order-cart",
     "src": "resources/js/components/order-cart.js",
     "isEntry": true
@@ -660,7 +660,7 @@
     "isEntry": true
   },
   "resources/js/pages/product-ai-generator.js": {
-    "file": "assets/product-ai-generator-Dkf9o-5T.js",
+    "file": "assets/product-ai-generator-CVI53gUo.js",
     "name": "product-ai-generator",
     "src": "resources/js/pages/product-ai-generator.js",
     "isEntry": true

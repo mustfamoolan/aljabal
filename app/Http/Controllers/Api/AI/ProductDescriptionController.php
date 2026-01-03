@@ -28,11 +28,11 @@ class ProductDescriptionController extends Controller
             'author' => 'nullable|string|max:255',
             'publisher' => 'nullable|string|max:255',
             'product_type' => 'nullable|string',
+            'is_original' => 'nullable|boolean',
             'category_id' => 'nullable|integer|exists:categories,id',
             'category_name' => 'nullable|string',
             'tags' => 'nullable|array',
             'tags.*' => 'string',
-            'color' => 'nullable|string|max:255',
             'sku' => 'nullable|string|max:255',
             'retail_price' => 'nullable|numeric',
             'type' => 'nullable|string|in:short,long,both',
@@ -59,17 +59,13 @@ class ProductDescriptionController extends Controller
                 }
             }
 
-            // Get product type label if provided
-            $productTypeLabel = $data['product_type'] ?? null;
-            if (!empty($data['product_type'])) {
-                try {
-                    $productTypeEnum = \App\Enums\ProductType::tryFrom($data['product_type']);
-                    if ($productTypeEnum) {
-                        $productTypeLabel = $productTypeEnum->label();
-                    }
-                } catch (\Exception $e) {
-                    // Use raw value if enum conversion fails
-                }
+            // Get product type label
+            $productTypeLabel = null;
+            if (isset($data['is_original'])) {
+                $productTypeLabel = $data['is_original'] ? 'أصلي' : 'عادي';
+            } elseif (!empty($data['product_type'])) {
+                // Fallback to product_type if provided (for backward compatibility)
+                $productTypeLabel = $data['product_type'] === 'original' ? 'أصلي' : 'عادي';
             }
 
             // Prepare data for Gemini
@@ -80,7 +76,6 @@ class ProductDescriptionController extends Controller
                 'product_type' => $productTypeLabel,
                 'category_name' => $categoryName,
                 'tags' => $data['tags'] ?? [],
-                'color' => $data['color'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'retail_price' => $data['retail_price'] ?? null,
             ];

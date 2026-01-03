@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Inventory;
 
-use App\Enums\ProductType;
+use App\Enums\SizeType;
 use App\Enums\UnitType;
 use App\Enums\WeightUnit;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,7 +28,7 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'unique:products,sku'],
-            'product_type' => ['required', Rule::enum(ProductType::class)],
+            'is_original' => ['nullable', 'boolean'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'subcategory_id' => ['nullable', 'exists:categories,id'],
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
@@ -42,16 +42,15 @@ class StoreProductRequest extends FormRequest
             'unit_type' => ['nullable', Rule::enum(UnitType::class)],
             'weight_unit' => ['nullable', Rule::enum(WeightUnit::class)],
             'weight_value' => ['nullable', 'numeric', 'min:0'],
-            'weight' => ['nullable', 'numeric', 'min:0'],
-            'size' => ['nullable', 'string', 'max:100'],
+            'size' => ['nullable', Rule::enum(SizeType::class)],
             'page_count' => ['nullable', 'integer', 'min:1'],
+            'is_hardcover' => ['nullable', 'boolean'],
             'carton_quantity' => ['nullable', 'integer', 'min:1'],
             'set_quantity' => ['nullable', 'integer', 'min:1'],
             'shelf' => ['nullable', 'string', 'max:50'],
             'compartment' => ['nullable', 'string', 'max:50'],
             'short_description' => ['nullable', 'string'],
             'long_description' => ['nullable', 'string'],
-            'color' => ['nullable', 'string', 'max:100'],
             'video_url' => ['nullable', 'url', 'max:500'],
             'images' => ['nullable', 'array', 'max:10'],
             'images.*' => ['image', 'max:2048'],
@@ -69,7 +68,6 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name.required' => 'اسم المنتج مطلوب',
-            'product_type.required' => 'نوع المنتج مطلوب',
             'sku.unique' => 'كود المنتج مستخدم بالفعل',
             'images.max' => 'يمكن رفع 10 صور كحد أقصى',
             'images.*.image' => 'يجب أن تكون الملفات صور',

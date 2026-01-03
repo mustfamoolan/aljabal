@@ -31,15 +31,19 @@ class ProductAIGenerator {
         const categoryId = categorySelect?.value || '';
         const categoryName = categorySelect ? this.getSelectedText('category_id') : '';
 
+        // Get is_original checkbox value
+        const isOriginalCheckbox = document.getElementById('is_original');
+        const isOriginal = isOriginalCheckbox ? isOriginalCheckbox.checked : false;
+
         const data = {
             name: document.getElementById('name')?.value || '',
             author: document.getElementById('author')?.value || '',
             publisher: document.getElementById('publisher')?.value || '',
-            product_type: document.getElementById('product_type')?.value || '',
+            is_original: isOriginal,
+            product_type: isOriginal ? 'original' : 'normal', // For backward compatibility with AI
             category_id: categoryId || null,
             category_name: categoryName,
             tags: this.getSelectedTags(),
-            color: document.getElementById('color')?.value || '',
             sku: document.getElementById('sku')?.value || '',
             retail_price: document.getElementById('retail_price')?.value || '',
         };
