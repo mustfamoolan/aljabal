@@ -184,5 +184,78 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
+    /**
+     * Get recent activities (unified orders and transactions) for the representative.
+     */
+    public function activities(Request $request): JsonResponse
+    {
+        $representativeId = auth()->id();
+        $limit = $request->get('limit', 10);
+        $perPage = $request->get('per_page', 20);
+
+        // Fetch Orders
+        $orders = Order::where('representative_id', $representativeId)
+            ->latest()
+            ->limit(50) // Limit initial pool for performance when merging
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'id' => 'order_' . $order->id,
+                    'original_id' => $order->id,
+                    'type' => 'order',
+                    'title' => 'طلب جديد #' . $order->id,
+                    'description' => 'من: ' . ($order->customer_name ?? 'عميل غير معروف'),
+                    'amount' => (float) $order->total_amount,
+                    'status' => $order->status->label(),
+                    'status_key' => $order->status->value,
+                    'date' => $order->created_at->toDateTimeString(),
+                    'created_at' => $order->created_at,
+                ];
+            });
+
+        // Fetch Transactions
+        $transactions = \App\Models\RepresentativeTransaction::where('representative_id', $representativeId)
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->map(function ($tx) {
+                return [
+                    'id' => 'tx_' . $tx->id,
+                    'original_id' => $tx->id,
+                    'type' => 'transaction',
+                    'title' => $tx->type->getLabel(),
+                    'description' => $tx->description,
+                    'amount' => (float) $tx->amount,
+                    'status' => $tx->status->getLabel(),
+                    'status_key' => $tx->status->value,
+                    'date' => $tx->created_at->toDateTimeString(),
+                    'created_at' => $tx->created_at,
+                ];
+            });
+
+        // Merge and Sort
+        $activities = $orders->concat($transactions)
+            ->sortByDesc('created_at')
+            ->values();
+
+        // Manual pagination if requested for "View All"
+        if ($request->has('page')) {
+            $page = $request->get('page', 1);
+            $pagedData = $activities->forPage($page, $perPage)->values();
+            
+            return response()->json([
+                'data' => $pagedData,
+                'meta' => [
+                    'total' => $activities->count(),
+                    'per_page' => $perPage,
+                    'current_page' => (int)$page,
+                    'last_page' => (int) ceil($activities->count() / $perPage),
+                ]
+            ]);
+        }
+
+        return response()->json([
+            'data' => $activities->take($limit),
+        ]);
     }
 }
