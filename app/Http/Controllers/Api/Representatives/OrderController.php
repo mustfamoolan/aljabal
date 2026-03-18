@@ -184,6 +184,8 @@ class OrderController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
         }
+    }
+
     /**
      * Get recent activities (unified orders and transactions) for the representative.
      */
