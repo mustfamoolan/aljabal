@@ -144,6 +144,14 @@ class Product extends Model
     }
 
     /**
+     * Get the main image URL
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->getMainImage()?->image_url;
+    }
+
+    /**
      * Get the main image (first image).
      */
     public function getMainImage(): ?ProductImage
