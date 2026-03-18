@@ -12,6 +12,31 @@ use Illuminate\Http\Request;
 class OrderController extends Controller
 {
     /**
+     * Get statistics for the representative.
+     */
+    public function statistics(): JsonResponse
+    {
+        $representativeId = auth()->id();
+        $today = now()->startOfDay();
+
+        $stats = [
+            'sales_today' => (float) Order::where('representative_id', $representativeId)
+                ->where('created_at', '>=', $today)
+                ->whereNotIn('status', ['cancelled', 'returned'])
+                ->sum('total_amount'),
+            'orders_today' => Order::where('representative_id', $representativeId)
+                ->where('created_at', '>=', $today)
+                ->count(),
+            'profit_today' => (float) Order::where('representative_id', $representativeId)
+                ->where('created_at', '>=', $today)
+                ->whereNotIn('status', ['cancelled', 'returned'])
+                ->sum('total_profit'),
+        ];
+
+        return response()->json($stats);
+    }
+
+    /**
      * Display a listing of orders for the authenticated representative.
      */
     public function index(Request $request): JsonResponse
