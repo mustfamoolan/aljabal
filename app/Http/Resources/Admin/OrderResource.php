@@ -41,6 +41,8 @@ class OrderResource extends JsonResource
             ],
             'governorate' => $this->governorate?->name,
             'district' => $this->district?->name,
+            'gift_name' => $this->gift?->name,
+            'gift_box_name' => $this->giftBox?->name,
             'order_items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
             'created_at' => $this->created_at?->toDateTimeString(),
             'completed_at' => $this->completed_at?->toDateTimeString(),
