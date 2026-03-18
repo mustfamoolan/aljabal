@@ -234,11 +234,11 @@ class OrderService
             // Calculate totals if not already calculated
             $this->calculateOrderTotals($order);
 
-            // Add final profit to representative account
-            if ($order->final_profit > 0) {
+            // Add total profit to representative account
+            if ($order->total_profit > 0) {
                 $this->accountService->addBalance(
                     $representative,
-                    (float) $order->final_profit,
+                    (float) $order->total_profit,
                     TransactionType::COMMISSION->value,
                     "ربح من طلب #{$order->id}",
                     $order->createdBy

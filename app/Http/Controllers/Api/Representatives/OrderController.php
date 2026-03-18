@@ -19,18 +19,17 @@ class OrderController extends Controller
         $representativeId = auth()->id();
         $today = now()->startOfDay();
 
+        $orders = Order::where('representative_id', $representativeId)
+            ->where('created_at', '>=', $today)
+            ->whereNotIn('status', ['cancelled', 'returned'])
+            ->get();
+
         $stats = [
-            'sales_today' => (float) Order::where('representative_id', $representativeId)
-                ->where('created_at', '>=', $today)
-                ->whereNotIn('status', ['cancelled', 'returned'])
-                ->sum('total_amount'),
+            'sales_today' => (float) $orders->sum(fn($o) => $o->calculateTotal()),
             'orders_today' => Order::where('representative_id', $representativeId)
                 ->where('created_at', '>=', $today)
                 ->count(),
-            'profit_today' => (float) Order::where('representative_id', $representativeId)
-                ->where('created_at', '>=', $today)
-                ->whereNotIn('status', ['cancelled', 'returned'])
-                ->sum('total_profit'),
+            'profit_today' => (float) $orders->sum('total_profit'),
         ];
 
         return response()->json($stats);
