@@ -234,34 +234,15 @@ class OrderService
             // Calculate totals if not already calculated
             $this->calculateOrderTotals($order);
 
-            // Add total profit to representative account
-            if ($order->total_profit > 0) {
+            // Add final profit to representative account
+            if ($order->final_profit > 0) {
                 $this->accountService->addBalance(
                     $representative,
-                    (float) $order->total_profit,
+                    (float) $order->final_profit,
                     TransactionType::COMMISSION->value,
                     "ربح من طلب #{$order->id}",
                     $order->createdBy
                 );
-            }
-
-            // Deduct preparation commission if exists
-            if ($order->preparation_commission > 0) {
-                $balanceBefore = (float) $representative->balance;
-                $representative->decrement('balance', $order->preparation_commission);
-                $balanceAfter = (float) $representative->fresh()->balance;
-
-                // Create transaction for commission deduction
-                RepresentativeTransaction::create([
-                    'representative_id' => $representative->id,
-                    'type' => TransactionType::DEDUCTION,
-                    'amount' => (float) $order->preparation_commission,
-                    'status' => TransactionStatus::COMPLETED,
-                    'description' => "عمولة تجهيز طلب #{$order->id}",
-                    'created_by' => $order->createdBy?->id,
-                    'balance_before' => $balanceBefore,
-                    'balance_after' => $balanceAfter,
-                ]);
             }
 
             // Award Gift Points

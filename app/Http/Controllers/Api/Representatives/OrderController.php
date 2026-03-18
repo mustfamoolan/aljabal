@@ -29,7 +29,7 @@ class OrderController extends Controller
             'orders_today' => Order::where('representative_id', $representativeId)
                 ->where('created_at', '>=', $today)
                 ->count(),
-            'profit_today' => (float) $orders->sum('total_profit'),
+            'profit_today' => (float) $orders->sum('final_profit'),
         ];
 
         return response()->json($stats);
