@@ -25,10 +25,8 @@ class OrderController extends Controller
             ->get();
 
         $stats = [
-            'sales_today' => (float) $orders->sum(fn($o) => $o->calculateTotal()),
-            'orders_today' => Order::where('representative_id', $representativeId)
-                ->where('created_at', '>=', $today)
-                ->count(),
+            'sales_today' => (float) $orders->sum('total_amount'),
+            'orders_today' => $orders->count(),
             'profit_today' => (float) $orders->sum('final_profit'),
         ];
 
