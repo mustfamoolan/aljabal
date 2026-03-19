@@ -332,9 +332,6 @@ class NotificationService
         }
     }
 
-    /**
-     * Send withdrawal status notification to representative
-     */
     public function sendWithdrawalStatusNotification(WithdrawalRequest $request, string $status, ?string $reason = null): void
     {
         try {
@@ -346,9 +343,7 @@ class NotificationService
                 ? "تم الموافقة على طلب السحب الخاص بك بمبلغ " . number_format($request->amount) . " د.ع"
                 : "تم رفض طلب السحب الخاص بك. السبب: " . ($reason ?? 'غير محدد');
 
-            $notification = new WithdrawalStatusNotification($request, $status, $reason);
-            $representative->notify($notification);
-
+            // Save to database first
             $this->saveNotificationToDatabase($representative, [
                 'type' => 'financial',
                 'title' => $title,
@@ -360,18 +355,23 @@ class NotificationService
                 ],
             ]);
 
-            Log::info('Withdrawal status notification sent to representative', [
+            // Attempt to send FCM
+            try {
+                $notification = new WithdrawalStatusNotification($request, $status, $reason);
+                $representative->notify($notification);
+            } catch (\Exception $e) {
+                Log::error('FCM Error (WithdrawalStatus): ' . $e->getMessage());
+            }
+
+            Log::info('Withdrawal status notification processed', [
                 'representative_id' => $representative->id,
                 'status' => $status,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to send withdrawal status notification', ['error' => $e->getMessage()]);
+            Log::error('Failed to process withdrawal status notification', ['error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Send new product notification to all representatives
-     */
     public function sendNewProductNotification(Product $product): void
     {
         try {
@@ -379,33 +379,30 @@ class NotificationService
             $notification = new NewProductNotification($product);
 
             foreach ($representatives as $rep) {
+                // Save to database
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'product',
+                    'title' => 'منتج جديد متوفر',
+                    'body' => "تمت إضافة منتج جديد للمخزن: {$product->name}",
+                    'data' => ['type' => 'new_product', 'id' => $product->id],
+                ]);
+
+                // Attempt FCM
                 try {
                     $rep->notify($notification);
-                    $this->saveNotificationToDatabase($rep, [
-                        'type' => 'product',
-                        'title' => 'منتج جديد متوفر',
-                        'body' => "تمت إضافة منتج جديد للمخزن: {$product->name}",
-                        'data' => ['type' => 'new_product', 'id' => $product->id],
-                    ]);
                 } catch (\Exception $e) {
-                    Log::error('Error sending new product notification to representative', [
-                        'representative_id' => $rep->id,
-                        'error' => $e->getMessage()
-                    ]);
+                    Log::error('FCM Error (NewProduct): ' . $e->getMessage());
                 }
             }
-            Log::info('New product notification sent to representatives', [
+            Log::info('New product notifications processed', [
                 'product_id' => $product->id,
-                'recipients_count' => $representatives->count(),
+                'count' => $representatives->count(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to send new product notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
+            Log::error('Failed to process new product notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Send product price discount notification
-     */
     public function sendProductPriceDiscountNotification(Product $product, float $oldPrice, float $newPrice): void
     {
         try {
@@ -413,33 +410,30 @@ class NotificationService
             $notification = new ProductPriceDiscountNotification($product, $oldPrice, $newPrice);
 
             foreach ($representatives as $rep) {
+                // Save to database
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'product',
+                    'title' => "تخفيض على السعر: {$product->name}",
+                    'body' => "تم تخفيض السعر من " . number_format($oldPrice) . " إلى " . number_format($newPrice) . " د.ع",
+                    'data' => ['type' => 'price_discount', 'id' => $product->id, 'old_price' => $oldPrice, 'new_price' => $newPrice],
+                ]);
+
+                // Attempt FCM
                 try {
                     $rep->notify($notification);
-                    $this->saveNotificationToDatabase($rep, [
-                        'type' => 'product',
-                        'title' => "تخفيض على السعر: {$product->name}",
-                        'body' => "تم تخفيض السعر من " . number_format($oldPrice) . " إلى " . number_format($newPrice) . " د.ع",
-                        'data' => ['type' => 'price_discount', 'id' => $product->id, 'old_price' => $oldPrice, 'new_price' => $newPrice],
-                    ]);
                 } catch (\Exception $e) {
-                    Log::error('Error sending price discount notification to representative', [
-                        'representative_id' => $rep->id,
-                        'error' => $e->getMessage()
-                    ]);
+                    Log::error('FCM Error (PriceDiscount): ' . $e->getMessage());
                 }
             }
-            Log::info('Price discount notification sent to representatives', [
+            Log::info('Price discount notifications processed', [
                 'product_id' => $product->id,
-                'recipients_count' => $representatives->count(),
+                'count' => $representatives->count(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to send product discount notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
+            Log::error('Failed to process product discount notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Send commission update notification
-     */
     public function sendCommissionUpdateNotification(OrderPreparationCommissionSetting $setting, float $oldValue): void
     {
         try {
@@ -447,43 +441,46 @@ class NotificationService
             $notification = new CommissionUpdateNotification($setting, $oldValue);
 
             foreach ($representatives as $rep) {
+                // Save to database
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'settings',
+                    'title' => 'تحديث عمولة التجهيز',
+                    'body' => "تم تغيير قيمة عمولة التجهيز إلى " . number_format($setting->commission_value) . " د.ع",
+                    'data' => ['type' => 'commission_update', 'new_value' => $setting->commission_value],
+                ]);
+
+                // Attempt FCM
                 try {
                     $rep->notify($notification);
-                    $this->saveNotificationToDatabase($rep, [
-                        'type' => 'settings',
-                        'title' => 'تحديث عمولة التجهيز',
-                        'body' => "تم تغيير قيمة عمولة التجهيز إلى " . number_format($setting->commission_value) . " د.ع",
-                        'data' => ['type' => 'commission_update', 'new_value' => $setting->commission_value],
-                    ]);
                 } catch (\Exception $e) {
-                    Log::error('Error sending commission update notification to representative', [
-                        'representative_id' => $rep->id,
-                        'error' => $e->getMessage()
-                    ]);
+                    Log::error('FCM Error (CommissionUpdate): ' . $e->getMessage());
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Failed to send commission update notification', ['error' => $e->getMessage()]);
+            Log::error('Failed to process commission update notification', ['error' => $e->getMessage()]);
         }
     }
 
-    /**
-     * Send custom notification
-     */
     public function sendCustomNotification($recipient, string $title, string $body, array $data = []): void
     {
         try {
-            $notification = new CustomAdminNotification($title, $body, $data);
-            $recipient->notify($notification);
-
+            // Save to database
             $this->saveNotificationToDatabase($recipient, [
                 'type' => 'admin_msg',
                 'title' => $title,
                 'body' => $body,
                 'data' => array_merge(['type' => 'custom'], $data),
             ]);
+
+            // Attempt FCM
+            try {
+                $notification = new CustomAdminNotification($title, $body, $data);
+                $recipient->notify($notification);
+            } catch (\Exception $e) {
+                Log::error('FCM Error (Custom): ' . $e->getMessage());
+            }
         } catch (\Exception $e) {
-            Log::error('Failed to send custom notification', ['recipient_id' => $recipient->id, 'error' => $e->getMessage()]);
+            Log::error('Failed to process custom notification', ['recipient_id' => $recipient->id, 'error' => $e->getMessage()]);
         }
     }
 
