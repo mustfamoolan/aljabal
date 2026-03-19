@@ -103,6 +103,19 @@
                 </li>
             @endif
 
+            @if(auth()->user()->isAdmin() || auth()->user()->can('notifications.view'))
+                <li class="menu-title mt-2">التواصل</li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('admin.notifications.send') }}">
+                        <span class="nav-icon">
+                            <iconify-icon icon="solar:bell-bing-bold-duotone"></iconify-icon>
+                        </span>
+                        <span class="nav-text"> إرسال إشعار </span>
+                    </a>
+                </li>
+            @endif
+
             @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access') || auth()->user()->can('tags.view'))
                 <li class="menu-title mt-2">التاغات</li>
 

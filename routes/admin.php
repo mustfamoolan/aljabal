@@ -188,4 +188,11 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     // Reports
     Route::get('reports', [ReportController::class, 'index'])->name('admin.reports.index');
+
+    // Notifications
+    Route::prefix('notifications')->name('admin.notifications.')->group(function () {
+        Route::get('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'send'])->name('send');
+        Route::post('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'store'])->name('store');
+        Route::get('/search-recipients', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'searchRecipients'])->name('search-recipients');
+    });
 });

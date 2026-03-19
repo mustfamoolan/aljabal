@@ -419,6 +419,24 @@
             </a>
         </div>
 
+        @if(auth()->user()->isAdmin() || auth()->user()->can('notifications.send'))
+            <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
+                <a href="{{ route('admin.notifications.send') }}" class="card dashboard-card text-decoration-none">
+                    <div class="card-decoration-circle" style="background: rgba(78, 115, 223, 0.15);"></div>
+                    <iconify-icon icon="solar:bell-bing-bold-duotone" class="card-background-icon"
+                        style="color: #4e73df;"></iconify-icon>
+                    <div class="card-content">
+                        <div class="card-icon-container" style="background: rgba(78, 115, 223, 0.15);">
+                            <iconify-icon icon="solar:bell-bing-bold-duotone" class="fs-28"
+                                style="color: #4e73df;"></iconify-icon>
+                        </div>
+                        <span class="card-title-text">إرسال إشعار</span>
+                        <span class="card-subtitle-text">تواصل مع المستخدمين</span>
+                    </div>
+                </a>
+            </div>
+        @endif
+
         <div class="col-xl-3 col-md-4 col-sm-6 mb-4">
             <a href="{{ route('notifications.index') }}" class="card dashboard-card text-decoration-none">
                 <div class="card-decoration-circle" style="background: rgba(13, 202, 240, 0.15);"></div>
