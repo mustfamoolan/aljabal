@@ -172,7 +172,38 @@
             </div>
 
             <!-- Main Chat -->
-            <!-- ... same chat-main ... -->
+            <div class="chat-main">
+                <!-- Header -->
+                <div class="chat-header" id="active-chat-header" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <img src="" class="chat-avatar" id="active-user-avatar">
+                        <div>
+                            <div class="chat-name" id="active-user-name">...</div>
+                            <div class="small text-success">متصل</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="messages-container" id="messages-list">
+                    <div class="h-100 d-flex align-items-center justify-content-center text-center" id="no-chat-placeholder">
+                        <div>
+                            <iconify-icon icon="solar:chat-round-dots-bold-duotone" style="font-size: 80px; color: #ddd;"></iconify-icon>
+                            <h5 class="text-muted mt-3">اختر محادثة أو ابدأ محادثة جديدة</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input -->
+                <div class="chat-input-area" id="input-area" style="display: none;">
+                    <form id="message-form">
+                        <input type="text" class="form-control" id="message-input" placeholder="اكتب رسالة هنا..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <iconify-icon icon="solar:plain-bold"></iconify-icon>
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
