@@ -65,8 +65,8 @@ Route::prefix('admin')->group(function () {
 
         // Notifications routes
         Route::prefix('notifications')->group(function () {
-            Route::post('send', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'sendCustomNotification']);
-            Route::get('search-recipients', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'searchRecipients']);
+            Route::post('send', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'sendCustomNotification'])->middleware('permission:notifications.send');
+            Route::get('search-recipients', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'searchRecipients'])->middleware('permission:notifications.view');
         });
 
         // Settings routes

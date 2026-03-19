@@ -16,8 +16,6 @@ class AdminNotificationController extends Controller
     public function __construct(NotificationService $notificationService)
     {
         $this->notificationService = $notificationService;
-        $this->middleware('permission:notifications.send')->only(['send', 'store']);
-        $this->middleware('permission:notifications.view')->only(['searchRecipients']);
     }
 
     public function send()

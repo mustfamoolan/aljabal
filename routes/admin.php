@@ -191,8 +191,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     // Notifications
     Route::prefix('notifications')->name('admin.notifications.')->group(function () {
-        Route::get('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'send'])->name('send');
-        Route::post('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'store'])->name('store');
-        Route::get('/search-recipients', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'searchRecipients'])->name('search-recipients');
+        Route::get('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'send'])->name('send')->middleware('permission:notifications.send');
+        Route::post('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'store'])->name('store')->middleware('permission:notifications.send');
+        Route::get('/search-recipients', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'searchRecipients'])->name('search-recipients')->middleware('permission:notifications.view');
     });
 });
