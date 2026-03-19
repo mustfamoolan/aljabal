@@ -33,9 +33,9 @@ class NewProductNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle('منتج جديد متوفر')
-                    ->setBody("تمت إضافة منتج جديد للمخزن: {$this->product->name}")
-                    ->setImage($this->product->image_url)
+                    ->title('منتج جديد متوفر')
+                    ->body("تمت إضافة منتج جديد للمخزن: {$this->product->name}")
+                    ->image($this->product->image_url)
             );
     }
 

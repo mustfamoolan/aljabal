@@ -34,8 +34,8 @@ class CommissionUpdateNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle('تحديث عمولة التجهيز')
-                    ->setBody("تم تغيير قيمة عمولة التجهيز إلى " . number_format($this->setting->commission_value) . " د.ع")
+                    ->title('تحديث عمولة التجهيز')
+                    ->body("تم تغيير قيمة عمولة التجهيز إلى " . number_format($this->setting->commission_value) . " د.ع")
             );
     }
 

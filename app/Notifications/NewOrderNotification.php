@@ -45,8 +45,8 @@ class NewOrderNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle('طلب جديد # ' . $this->order->id)
-                    ->setBody("تم استلام طلب جديد من {$this->order->customer_name} بمبلغ " . number_format($this->order->total_amount) . " د.ع")
+                    ->title('طلب جديد # ' . $this->order->id)
+                    ->body("تم استلام طلب جديد من {$this->order->customer_name} بمبلغ " . number_format($this->order->total_amount) . " د.ع")
             );
     }
 

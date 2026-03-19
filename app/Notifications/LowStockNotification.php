@@ -48,8 +48,8 @@ class LowStockNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle('تنبيه: مخزون منخفض')
-                    ->setBody("المنتج {$this->product->name} وصل للحد الأدنى. الكمية: {$this->product->quantity}")
+                    ->title('تنبيه: مخزون منخفض')
+                    ->body("المنتج {$this->product->name} وصل للحد الأدنى. الكمية: {$this->product->quantity}")
             );
     }
 }

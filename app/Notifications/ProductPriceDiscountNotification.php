@@ -36,9 +36,9 @@ class ProductPriceDiscountNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle("تخفيض على السعر: {$this->product->name}")
-                    ->setBody("تم تخفيض السعر من " . number_format($this->oldPrice) . " إلى " . number_format($this->newPrice) . " د.ع")
-                    ->setImage($this->product->image_url)
+                    ->title("تخفيض على السعر: {$this->product->name}")
+                    ->body("تم تخفيض السعر من " . number_format($this->oldPrice) . " إلى " . number_format($this->newPrice) . " د.ع")
+                    ->image($this->product->image_url)
             );
     }
 

@@ -32,15 +32,15 @@ class CustomAdminNotification extends Notification
             ], array_map('strval', $this->data)))
             ->notification(
                 FcmNotification::create()
-                    ->setTitle($this->title)
-                    ->setBody($this->body)
+                    ->title($this->title)
+                    ->body($this->body)
             );
 
         if (isset($this->data['image']) && !empty($this->data['image'])) {
             $fcmMessage->notification(
                 FcmNotification::create()
-                    ->setTitle($this->title)
-                    ->setBody($this->body)
+                    ->title($this->title)
+                    ->body($this->body)
                     ->image($this->data['image'])
             );
         }

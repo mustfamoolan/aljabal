@@ -47,8 +47,8 @@ class OrderStatusNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle('تحديث حالة الطلب # ' . $this->order->id)
-                    ->setBody("تغيرت حالة الطلب من {$this->oldStatus} إلى {$this->newStatus}")
+                    ->title('تحديث حالة الطلب # ' . $this->order->id)
+                    ->body("تغيرت حالة الطلب من {$this->oldStatus} إلى {$this->newStatus}")
             );
     }
 

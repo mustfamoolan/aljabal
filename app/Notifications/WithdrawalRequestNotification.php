@@ -48,8 +48,8 @@ class WithdrawalRequestNotification extends Notification
             ])
             ->notification(
                 FcmNotification::create()
-                    ->setTitle($title)
-                    ->setBody($body)
+                    ->title($title)
+                    ->body($body)
             );
     }
 
