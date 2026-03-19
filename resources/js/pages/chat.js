@@ -27,6 +27,10 @@ class AdminChat {
     }
 
     async init() {
+        // Show loading state initially
+        console.log('Chat Initializing...');
+        this.loadRepresentatives(); // Load reps first as requested
+        
         try {
             const tokenResponse = await fetch('/admin/chat/firebase-token');
             const data = await tokenResponse.json();
@@ -38,10 +42,19 @@ class AdminChat {
                 
                 this.listenToChats();
                 this.bindEvents();
+            } else {
+                console.error('No Firebase token received');
+                this.showError('خطأ في الاتصال بنظام الرسائل');
             }
         } catch (error) {
             console.error('Chat Init Error:', error);
+            this.showError('حدث خطأ أثناء تحميل نظام الدردشة');
         }
+    }
+
+    showError(msg) {
+        const list = document.getElementById('conversations-list');
+        if (list) list.innerHTML = `<div class="text-center p-4 text-danger">${msg}</div>`;
     }
 
     listenToChats() {
@@ -191,16 +204,10 @@ class AdminChat {
             }
         });
 
-        // Search reps in modal
-        const modalSearch = document.getElementById('modal-search-reps');
-        modalSearch.addEventListener('input', (e) => {
+        // Search reps
+        const searchInput = document.getElementById('search-reps');
+        searchInput.addEventListener('input', (e) => {
             this.renderRepsList(e.target.value);
-        });
-
-        // Load reps when modal opens
-        const modal = document.getElementById('newChatModal');
-        modal.addEventListener('show.bs.modal', () => {
-            this.loadRepresentatives();
         });
     }
 
@@ -212,26 +219,44 @@ class AdminChat {
             this.renderRepsList();
         } catch (error) {
             console.error('Load Reps Error:', error);
+            const container = document.getElementById('reps-list');
+            if (container) container.innerHTML = '<div class="text-center p-4 text-muted">فشل تحميل المناديب</div>';
         }
     }
 
     renderRepsList(search = '') {
         const container = document.getElementById('reps-list');
+        if (!container) return;
+
         const filtered = this.allReps.filter(r => 
             r.name.toLowerCase().includes(search.toLowerCase())
         );
 
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="text-center p-4 text-muted small">لا يوجد نتائج</div>';
+            return;
+        }
+
         container.innerHTML = filtered.map(rep => `
-            <button class="list-group-item list-group-item-action d-flex align-items-center gap-2" 
-                    onclick="window.chatApp.startNewChat('${rep.id}', '${rep.name}')">
-                <img src="${rep.avatar}" class="rounded-circle" width="30" height="30">
-                <span>${rep.name}</span>
-            </button>
+            <div class="chat-item d-flex align-items-center justify-content-between p-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="${rep.avatar}" class="chat-avatar" style="width: 35px; height: 35px;">
+                    <div class="chat-name" style="font-size: 13px;">${rep.name}</div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                        onclick="window.chatApp.startNewChat('${rep.id}', '${rep.name}')">
+                    مراسلة
+                </button>
+            </div>
         `).join('');
     }
 
     async startNewChat(repId, name) {
         try {
+            // Switch to chats tab
+            const chatBtn = document.getElementById('chats-tab');
+            if (chatBtn) chatBtn.click();
+
             // Check if chat already exists
             let existingChat = this.chats.find(c => c.participants.includes(repId));
             
@@ -242,7 +267,7 @@ class AdminChat {
                 const chatData = {
                     participants: [this.currentUid, repId],
                     names: {
-                        [this.currentUid]: auth.currentUser.displayName || 'Admin',
+                        [this.currentUid]: 'الإدارة',
                         [repId]: name
                     },
                     last_message: '',
@@ -254,11 +279,6 @@ class AdminChat {
                 const docRef = await addDoc(collection(db, 'chats'), chatData);
                 this.selectChat(docRef.id);
             }
-
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('newChatModal'));
-            modal.hide();
-
         } catch (error) {
             console.error('Start New Chat Error:', error);
         }

@@ -138,40 +138,41 @@
         <div class="chat-wrapper" id="chat-app">
             <!-- Sidebar -->
             <div class="chat-sidebar">
-                <div class="search-box d-flex align-items-center gap-2">
-                    <input type="text" class="form-control" placeholder="بحث..." id="search-reps">
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newChatModal">
-                        <i class="bx bx-plus"></i>
-                    </button>
+                <div class="p-3 border-bottom">
+                    <ul class="nav nav-pills nav-justified" id="chatTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="reps-tab" data-bs-toggle="pill" data-bs-target="#reps-content" type="button">المندوبين</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="chats-tab" data-bs-toggle="pill" data-bs-target="#chats-content" type="button">المحادثات</button>
+                        </li>
+                    </ul>
                 </div>
-                <div class="chat-list" id="conversations-list">
-                    <div class="text-center p-5">
-                        <div class="spinner-border spinner-border-sm text-primary"></div>
-                        <p class="mt-2 small text-muted">جاري تحميل المحادثات...</p>
+
+                <div class="tab-content h-100 overflow-hidden">
+                    <!-- Representatives List -->
+                    <div class="tab-pane fade show active h-100" id="reps-content">
+                        <div class="p-2 border-bottom">
+                            <input type="text" class="form-control form-control-sm" placeholder="بحث عن مندوب..." id="search-reps">
+                        </div>
+                        <div class="chat-list" id="reps-list">
+                            <div class="text-center p-5">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Conversations -->
+                    <div class="tab-pane fade h-100" id="chats-content">
+                        <div class="chat-list" id="conversations-list">
+                            <div class="text-center p-5 text-muted small">لا يوجد محادثات نشطة</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main Chat -->
-            <!-- ... existing chat-main ... -->
-        </div>
-    </div>
-</div>
-
-<!-- New Chat Modal -->
-<div class="modal fade" id="newChatModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">بدء محادثة جديدة</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <input type="text" class="form-control mb-3" placeholder="بحث عن مندوب..." id="modal-search-reps">
-                <div class="list-group" id="reps-list" style="max-height: 400px; overflow-y: auto;">
-                    <!-- Reps will be loaded here -->
-                </div>
-            </div>
+            <!-- ... same chat-main ... -->
         </div>
     </div>
 </div>
