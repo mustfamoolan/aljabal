@@ -71,6 +71,11 @@ class RolePermissionSeeder extends Seeder
             'tags.create',
             'tags.update',
             'tags.delete',
+
+            // Notification permissions
+            'notifications.view',
+            'notifications.send',
+            'notifications.delete',
         ];
 
         foreach ($permissions as $permission) {

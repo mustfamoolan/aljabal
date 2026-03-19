@@ -380,6 +380,10 @@ class NotificationService
                     'data' => ['type' => 'new_product', 'id' => $product->id],
                 ]);
             }
+            Log::info('New product notification sent to representatives', [
+                'product_id' => $product->id,
+                'recipients_count' => $representatives->count(),
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to send new product notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
@@ -395,14 +399,37 @@ class NotificationService
             $notification = new ProductPriceDiscountNotification($product, $oldPrice, $newPrice);
 
             foreach ($representatives as $rep) {
-                $rep->notify($notification);
-                $this->saveNotificationToDatabase($rep, [
-                    'type' => 'product',
-                    'title' => "تخفيض على السعر: {$product->name}",
-                    'body' => "تم تخفيض السعر من " . number_format($oldPrice) . " إلى " . number_format($newPrice) . " د.ع",
-                    'data' => ['type' => 'price_discount', 'id' => $product->id, 'old_price' => $oldPrice, 'new_price' => $newPrice],
-                ]);
+            $representatives = \App\Models\Representative::where('is_active', true)->get();
+            $notification = new \App\Notifications\ProductPriceDiscountNotification($product, $oldPrice, $newPrice);
+
+            foreach ($representatives as $representative) {
+                try {
+                    $representative->notify($notification);
+
+                    $this->saveNotificationToDatabase($representative, [
+                        'type' => 'price_discount',
+                        'title' => "تخفيض على السعر: {$product->name}",
+                        'body' => "تم تخفيض السعر من " . number_format($oldPrice) . " إلى " . number_format($newPrice) . " د.ع",
+                        'data' => [
+                            'product_id' => $product->id,
+                            'old_price' => $oldPrice,
+                            'new_price' => $newPrice,
+                        ],
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Error sending product price discount notification to representative', [
+                        'representative_id' => $representative->id,
+                        'product_id' => $product->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
+
+            Log::info('Notification sent: Product Price Discount', [
+                'product_id' => $product->id,
+                'old_price' => $oldPrice,
+                'new_price' => $newPrice,
+            ]);
         } catch (\Exception $e) {
             Log::error('Failed to send product discount notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
         }
@@ -414,8 +441,6 @@ class NotificationService
     public function sendCommissionUpdateNotification(OrderPreparationCommissionSetting $setting, float $oldValue): void
     {
         try {
-            $representatives = Representative::where('is_active', true)->get();
-            $notification = new CommissionUpdateNotification($setting, $oldValue);
 
             foreach ($representatives as $rep) {
                 $rep->notify($notification);
