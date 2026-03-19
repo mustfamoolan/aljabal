@@ -90,7 +90,7 @@ class ChatController extends Controller
                         'id' => 'u_' . $user->id,
                         'name' => $user->name,
                         'role' => $user->roles->first()?->name ?? 'staff',
-                        'avatar' => $user->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name),
+                        'avatar' => $user->image_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($user->name),
                     ];
                 })
             ]);
@@ -158,7 +158,7 @@ class ChatController extends Controller
                     return [
                         'id' => 'r_' . $rep->id,
                         'name' => $rep->name,
-                        'avatar' => $rep->profile_photo_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($rep->name),
+                        'avatar' => $rep->image_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($rep->name),
                     ];
                 })
             ]);
