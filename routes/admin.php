@@ -201,5 +201,6 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::get('/', [\App\Http\Controllers\Api\ChatController::class, 'index'])->name('index');
         Route::get('/firebase-token', [\App\Http\Controllers\Api\ChatController::class, 'getWebFirebaseToken'])->name('firebase-token');
         Route::get('/representatives', [\App\Http\Controllers\Api\ChatController::class, 'getRepresentatives'])->name('representatives');
+        Route::post('/notify-new-message', [\App\Http\Controllers\Api\ChatController::class, 'notifyNewMessage'])->name('notify-new-message');
     });
 });

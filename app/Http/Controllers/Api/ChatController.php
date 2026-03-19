@@ -80,11 +80,9 @@ class ChatController extends Controller
     public function getSupportStaff()
     {
         try {
-            // Get users with roles that can handle support
-            // For now, let's get all admins and employees
-            $staff = User::whereHas('roles', function($q) {
-                $q->whereIn('name', ['admin', 'employee']);
-            })->where('is_active', true)->get();
+            // Get all users who are not representatives (usually admins and employees)
+            // We can also just get all users Since 'representative' is a separate model in this app
+            $staff = User::where('is_active', true)->get();
 
             return response()->json([
                 'staff' => $staff->map(function($user) {
@@ -98,6 +96,52 @@ class ChatController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to fetch support staff'], 500);
+        }
+    }
+
+    /**
+     * Send FCM notification for a new message
+     */
+    public function notifyNewMessage(Request $request)
+    {
+        $request->validate([
+            'chat_id' => 'required',
+            'receiver_id' => 'required', // e.g. 'r_3' or 'u_1'
+            'message' => 'required',
+            'sender_name' => 'required'
+        ]);
+
+        try {
+            $receiverId = $request->receiver_id;
+            $tokens = [];
+
+            if (str_starts_with($receiverId, 'r_')) {
+                // To representative
+                $id = substr($receiverId, 2);
+                $tokens = \App\Models\FcmToken::where('representative_id', $id)->pluck('token')->toArray();
+            } else {
+                // To web user (admin/employee)
+                $id = substr($receiverId, 2);
+                $tokens = \App\Models\FcmToken::where('user_id', $id)->pluck('token')->toArray();
+            }
+
+            if (empty($tokens)) {
+                return response()->json(['success' => false, 'message' => 'No active tokens found']);
+            }
+
+            $notificationService = new \App\Services\NotificationService();
+            $notificationService->sendPushNotification($tokens, [
+                'title' => 'رسالة جديدة من ' . $request->sender_name,
+                'body' => $request->message,
+                'type' => 'chat',
+                'chat_id' => $request->chat_id,
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK'
+            ]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Chat Notification Error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
 

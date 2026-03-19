@@ -7,11 +7,14 @@ import {
     orderBy, 
     onSnapshot, 
     addDoc, 
-    updateDoc, 
+    updateDoc,
+    setDoc,
+    deleteDoc,
     doc, 
     getDoc,
     serverTimestamp,
-    increment
+    increment,
+    arrayUnion
 } from "firebase/firestore";
 
 class AdminChat {
@@ -29,7 +32,8 @@ class AdminChat {
     async init() {
         // Show loading state initially
         console.log('Chat Initializing...');
-        this.loadRepresentatives(); // Load reps first as requested
+        this.loadRepresentatives(); 
+        this.loadStaff(); 
         
         try {
             const tokenResponse = await fetch('/admin/chat/firebase-token');
@@ -37,7 +41,7 @@ class AdminChat {
             
             if (data.token) {
                 const userCredential = await signInWithCustomToken(auth, data.token);
-                this.currentUid = data.uid;
+                this.currentUid = 'u_' + data.uid; // Unified ID with prefix
                 console.log('Logged into Firebase as:', this.currentUid);
                 
                 this.listenToChats();
@@ -68,10 +72,14 @@ class AdminChat {
         this.unsubscribeChats = onSnapshot(q, (snapshot) => {
             this.chats = snapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(chat => {
+                    const deletedBy = chat.deleted_by || [];
+                    return !deletedBy.includes(this.currentUid);
+                })
                 .sort((a, b) => {
                     const aTime = a.last_time?.seconds || 0;
                     const bTime = b.last_time?.seconds || 0;
-                    return bTime - aTime; // Sort descending
+                    return bTime - aTime;
                 });
             this.renderChatList();
         });
@@ -154,16 +162,116 @@ class AdminChat {
         container.innerHTML = messages.map(msg => {
             const isMe = msg.sender_id === this.currentUid;
             const time = msg.time ? new Date(msg.time.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            
+            const replyHtml = msg.reply_to ? `
+                <div class="reply-preview-in-msg mb-1 p-2 rounded bg-dark bg-opacity-10 small">
+                    <div class="fw-bold">${msg.reply_to_name || ''}</div>
+                    <div class="text-truncate">${msg.reply_to}</div>
+                </div>
+            ` : '';
+
             return `
-                <div class="message ${isMe ? 'sent' : 'received'}">
-                    ${msg.text}
+                <div class="message ${isMe ? 'sent' : 'received'}" oncontextmenu="window.chatApp.showMsgMenu(event, '${msg.id}')">
+                    ${replyHtml}
+                    <div class="msg-text">${msg.text}</div>
                     <span class="message-time">${time}</span>
                 </div>
             `;
         }).join('');
         
         container.scrollTop = container.scrollHeight;
+    }
+
+    setReplyingTo(msgId) {
+        const messagesRef = collection(db, 'chats', this.activeChatId, 'messages');
+        // This is tricky because we don't store all messages in memory. 
+        // For simplicity, let's just find it in the DOM or pass the text.
+        const msgEl = document.querySelector(`[oncontextmenu*="${msgId}"] .msg-text`);
+        const chat = this.chats.find(c => c.id === this.activeChatId);
+        const otherParticipantId = chat.participants.find(p => p !== this.currentUid);
+        const name = chat.names[otherParticipantId];
+
+        this.replyingTo = {
+            id: msgId,
+            text: msgEl ? msgEl.innerText : 'الرسالة الرئيسية',
+            name: name
+        };
+
+        const preview = document.getElementById('reply-preview');
+        if (preview) {
+            preview.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center p-2 bg-light border-start border-primary border-4 rounded mb-2">
+                    <div class="small text-truncate">
+                        <div class="fw-bold">${name}</div>
+                        <div>${this.replyingTo.text}</div>
+                    </div>
+                    <button class="btn btn-sm btn-link text-muted" onclick="window.chatApp.clearReply()"><i class="fas fa-times"></i></button>
+                </div>
+            `;
+            preview.style.display = 'block';
+        }
+    }
+
+    clearReply() {
+        this.replyingTo = null;
+        const preview = document.getElementById('reply-preview');
+        if (preview) {
+            preview.style.display = 'none';
+            preview.innerHTML = '';
+        }
+    }
+
+    showMsgMenu(e, msgId) {
+        e.preventDefault();
+        const menu = document.getElementById('msg-context-menu');
+        if (!menu) return;
+
+        menu.style.display = 'block';
+        menu.style.left = e.pageX + 'px';
+        menu.style.top = e.pageY + 'px';
+        menu.dataset.msgId = msgId;
+
+        // Hide menu on click outside
+        const hide = () => {
+            menu.style.display = 'none';
+            document.removeEventListener('click', hide);
+        };
+        setTimeout(() => document.addEventListener('click', hide), 10);
+    }
+
+    async deleteMessage(forEveryone = false) {
+        const msgId = document.getElementById('msg-context-menu').dataset.msgId;
+        if (!msgId || !this.activeChatId) return;
+
+        if (forEveryone) {
+            await deleteDoc(doc(db, 'chats', this.activeChatId, 'messages', msgId));
+        } else {
+            // Logic for "Delete for me"
+            const msgRef = doc(db, 'chats', this.activeChatId, 'messages', msgId);
+            await updateDoc(msgRef, {
+                hidden_for: arrayUnion(this.currentUid)
+            });
+        }
+    }
+
+    async deleteChat(forEveryone = false) {
+        if (!this.activeChatId) return;
+        if (!confirm('هل أنت متأكد من حذف هذه الدردشة؟')) return;
+
+        if (forEveryone) {
+            await deleteDoc(doc(db, 'chats', this.activeChatId));
+            this.activeChatId = null;
+            document.getElementById('active-chat-header').style.display = 'none';
+            document.getElementById('messages-list').innerHTML = '';
+            document.getElementById('input-area').style.display = 'none';
+        } else {
+            const chatRef = doc(db, 'chats', this.activeChatId);
+            await updateDoc(chatRef, {
+                deleted_by: arrayUnion(this.currentUid)
+            });
+            this.activeChatId = null;
+            document.getElementById('active-chat-header').style.display = 'none';
+            document.getElementById('input-area').style.display = 'none';
+        }
     }
 
     async sendMessage(text) {
@@ -177,8 +285,12 @@ class AdminChat {
                 sender_id: this.currentUid,
                 text: text,
                 time: serverTimestamp(),
-                is_read: false
+                is_read: false,
+                reply_to: this.replyingTo?.text || null,
+                reply_to_name: this.replyingTo?.name || null
             };
+
+            this.clearReply();
 
             // 1. Add message
             await addDoc(collection(db, 'chats', this.activeChatId, 'messages'), messageData);
@@ -190,6 +302,21 @@ class AdminChat {
                 last_sender_id: this.currentUid,
                 last_time: serverTimestamp(),
                 [`unread_${otherParticipantId}`]: increment(1)
+            });
+
+            // 3. Trigger Notification via Backend
+            fetch('/admin/chat/notify-new-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    chat_id: this.activeChatId,
+                    receiver_id: otherParticipantId,
+                    message: text,
+                    sender_name: 'الإدارة'
+                })
             });
 
         } catch (error) {
@@ -219,6 +346,65 @@ class AdminChat {
                 this.renderRepsList(e.target.value);
             });
         }
+
+        // Search staff
+        const searchStaffInput = document.getElementById('search-staff');
+        if (searchStaffInput) {
+            searchStaffInput.addEventListener('input', (e) => {
+                this.renderStaffList(e.target.value);
+            });
+        }
+
+        // Conversation Filters
+        const filterBtns = document.querySelectorAll('#chats-content .btn');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.renderChatList(btn.innerText);
+            });
+        });
+    }
+
+    async loadStaff() {
+        try {
+            const response = await fetch('/representative/chat/support-staff');
+            const data = await response.json();
+            this.allStaff = data.staff;
+            this.renderStaffList();
+        } catch (error) {
+            console.error('Load Staff Error:', error);
+        }
+    }
+
+    renderStaffList(search = '') {
+        const container = document.getElementById('staff-list');
+        if (!container) return;
+
+        const filtered = (this.allStaff || []).filter(s => 
+            s.name.toLowerCase().includes(search.toLowerCase()) && s.id !== this.currentUid
+        );
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<div class="text-center p-4 text-muted small">لا يوجد نتائج</div>';
+            return;
+        }
+
+        container.innerHTML = filtered.map(staff => `
+            <div class="chat-item d-flex align-items-center justify-content-between p-2">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="${staff.avatar}" class="chat-avatar" style="width: 35px; height: 35px;">
+                    <div>
+                        <div class="chat-name" style="font-size: 13px;">${staff.name}</div>
+                        <div class="text-muted small" style="font-size: 10px;">${staff.role}</div>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" 
+                        onclick="window.chatApp.startNewChat('${staff.id}', '${staff.name}')">
+                    مراسلة
+                </button>
+            </div>
+        `).join('');
     }
 
     async loadRepresentatives() {
@@ -263,18 +449,16 @@ class AdminChat {
 
     async startNewChat(repId, name) {
         try {
-            // Switch to chats tab
-            const chatBtn = document.getElementById('chats-tab');
-            if (chatBtn) chatBtn.click();
+            // Unified ID generation (same as Flutter)
+            const chatId = [this.currentUid, repId].sort().join('_');
+            const chatRef = doc(db, 'chats', chatId);
+            const chatSnap = await getDoc(chatRef);
 
-            // Check if chat already exists
-            let existingChat = this.chats.find(c => c.participants.includes(repId));
-            
-            if (existingChat) {
-                this.selectChat(existingChat.id);
+            if (chatSnap.exists()) {
+                this.selectChat(chatId);
             } else {
-                // Create new chat in Firestore
                 const chatData = {
+                    id: chatId,
                     participants: [this.currentUid, repId],
                     names: {
                         [this.currentUid]: 'الإدارة',
@@ -283,12 +467,15 @@ class AdminChat {
                     last_message: '',
                     last_time: serverTimestamp(),
                     [`unread_${this.currentUid}`]: 0,
-                    [`unread_${repId}`]: 0
+                    [`unread_${repId}`]: 0,
+                    deleted_by: []
                 };
-
-                const docRef = await addDoc(collection(db, 'chats'), chatData);
-                this.selectChat(docRef.id);
+                await setDoc(chatRef, chatData);
+                this.selectChat(chatId);
             }
+            
+            const chatBtn = document.getElementById('chats-tab');
+            if (chatBtn) chatBtn.click();
         } catch (error) {
             console.error('Start New Chat Error:', error);
         }

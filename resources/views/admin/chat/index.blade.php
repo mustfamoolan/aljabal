@@ -129,6 +129,40 @@
         display: flex;
         gap: 10px;
     }
+    .msg-context-menu {
+        position: absolute;
+        background: #fff;
+        border: 1px solid #eee;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        display: none;
+        z-index: 1000;
+        padding: 5px 0;
+        min-width: 150px;
+    }
+    .msg-context-menu div {
+        padding: 8px 15px;
+        cursor: pointer;
+        font-size: 13px;
+        transition: 0.2s;
+    }
+    .msg-context-menu div:hover {
+        background: #f8f9fa;
+    }
+    .msg-context-menu div i {
+        margin-left: 10px;
+        width: 15px;
+    }
+    #reply-preview {
+        display: none;
+    }
+    .reply-preview-in-msg {
+        border-right: 3px solid #007bff;
+        margin-bottom: 8px;
+        padding: 5px 10px;
+        background: rgba(0,0,0,0.03);
+        border-radius: 4px;
+    }
 </style>
 @endsection
 
@@ -141,17 +175,31 @@
                 <div class="p-3 border-bottom">
                     <ul class="nav nav-pills nav-justified" id="chatTabs" role="tablist">
                         <li class="nav-item">
-                            <button class="nav-link active" id="reps-tab" data-bs-toggle="pill" data-bs-target="#reps-content" type="button">المندوبين</button>
+                            <button class="nav-link active" id="chats-tab" data-bs-toggle="pill" data-bs-target="#chats-content" type="button">المحادثات</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" id="chats-tab" data-bs-toggle="pill" data-bs-target="#chats-content" type="button">المحادثات</button>
+                            <button class="nav-link" id="reps-tab" data-bs-toggle="pill" data-bs-target="#reps-content" type="button">المناديب</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="staff-tab" data-bs-toggle="pill" data-bs-target="#staff-content" type="button">الموظفين</button>
                         </li>
                     </ul>
                 </div>
 
                 <div class="tab-content h-100 overflow-hidden">
+                    <!-- Recent Conversations -->
+                    <div class="tab-pane fade show active h-100" id="chats-content">
+                        <div class="p-2 border-bottom d-flex gap-1 overflow-auto">
+                            <button class="btn btn-xs btn-outline-primary rounded-pill active">الكل</button>
+                            <button class="btn btn-xs btn-outline-primary rounded-pill">غير مقروء</button>
+                        </div>
+                        <div class="chat-list" id="conversations-list">
+                            <div class="text-center p-5 text-muted small">جاري تحميل المحادثات...</div>
+                        </div>
+                    </div>
+
                     <!-- Representatives List -->
-                    <div class="tab-pane fade show active h-100" id="reps-content">
+                    <div class="tab-pane fade h-100" id="reps-content">
                         <div class="p-2 border-bottom">
                             <input type="text" class="form-control form-control-sm" placeholder="بحث عن مندوب..." id="search-reps">
                         </div>
@@ -162,10 +210,15 @@
                         </div>
                     </div>
 
-                    <!-- Recent Conversations -->
-                    <div class="tab-pane fade h-100" id="chats-content">
-                        <div class="chat-list" id="conversations-list">
-                            <div class="text-center p-5 text-muted small">لا يوجد محادثات نشطة</div>
+                    <!-- Staff List -->
+                    <div class="tab-pane fade h-100" id="staff-content">
+                        <div class="p-2 border-bottom">
+                            <input type="text" class="form-control form-control-sm" placeholder="بحث عن موظف..." id="search-staff">
+                        </div>
+                        <div class="chat-list" id="staff-list">
+                            <div class="text-center p-5">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -196,6 +249,7 @@
 
                 <!-- Input -->
                 <div class="chat-input-area" id="input-area" style="display: none;">
+                    <div id="reply-preview"></div>
                     <form id="message-form">
                         <input type="text" class="form-control" id="message-input" placeholder="اكتب رسالة هنا..." autocomplete="off">
                         <button type="submit" class="btn btn-primary px-4">
@@ -205,6 +259,19 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Context Menu -->
+<div id="msg-context-menu" class="msg-context-menu">
+    <div onclick="window.chatApp.setReplyingTo(this.parentElement.dataset.msgId)">
+        <i class="fas fa-reply text-primary"></i> رد
+    </div>
+    <div onclick="window.chatApp.deleteMessage(true)" class="text-danger">
+        <i class="fas fa-trash-alt"></i> حذف للجميع
+    </div>
+    <div onclick="window.chatApp.deleteMessage(false)" class="text-danger">
+        <i class="fas fa-eraser"></i> حذف لدي
     </div>
 </div>
 @endsection

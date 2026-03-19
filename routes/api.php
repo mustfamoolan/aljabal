@@ -210,6 +210,7 @@ Route::prefix('representative')->group(function () {
         Route::prefix('chat')->group(function () {
             Route::get('/firebase-token', [\App\Http\Controllers\Api\ChatController::class, 'getFirebaseToken']);
             Route::get('/support-staff', [\App\Http\Controllers\Api\ChatController::class, 'getSupportStaff']);
+            Route::post('/notify-new-message', [\App\Http\Controllers\Api\ChatController::class, 'notifyNewMessage']);
         });
     });
 });
