@@ -567,11 +567,16 @@ class NotificationService
                 // For chat, we often need multiple tokens.
                 
                 $tokens = [];
-                if ($recipient instanceof \App\Models\Representative) {
-                    $tokens = \App\Models\FcmToken::where('representative_id', $recipient->id)->pluck('token')->toArray();
-                } else if ($recipient instanceof \App\Models\User) {
-                    $tokens = \App\Models\FcmToken::where('user_id', $recipient->id)->pluck('token')->toArray();
+                if (!empty($recipient->fcm_token)) {
+                    $tokens[] = $recipient->fcm_token;
                 }
+
+                Log::info('[ChatNotification] Sending Push', [
+                    'recipient_id' => $recipient->id,
+                    'recipient_type' => get_class($recipient),
+                    'tokens_count' => count($tokens),
+                    'has_token' => !empty($tokens),
+                ]);
 
                 if (!empty($tokens)) {
                     $this->sendPushNotification($tokens, [
