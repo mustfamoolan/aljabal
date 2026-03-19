@@ -41,7 +41,7 @@ class AdminChat {
             
             if (data.token) {
                 const userCredential = await signInWithCustomToken(auth, data.token);
-                this.currentUid = 'u_' + data.uid; // Unified ID with prefix
+                this.currentUid = data.uid; // Already contains 'u_' prefix from backend
                 console.log('Logged into Firebase as:', this.currentUid);
                 
                 this.listenToChats();

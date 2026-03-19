@@ -113,29 +113,27 @@ class ChatController extends Controller
 
         try {
             $receiverId = $request->receiver_id;
-            $tokens = [];
-
+            $notificationService = new \App\Services\Notifications\NotificationService();
+            
+            $recipient = null;
             if (str_starts_with($receiverId, 'r_')) {
                 // To representative
                 $id = substr($receiverId, 2);
-                $tokens = \App\Models\FcmToken::where('representative_id', $id)->pluck('token')->toArray();
+                $recipient = \App\Models\Representative::find($id);
             } else {
                 // To web user (admin/employee)
                 $id = substr($receiverId, 2);
-                $tokens = \App\Models\FcmToken::where('user_id', $id)->pluck('token')->toArray();
+                $recipient = \App\Models\User::find($id);
             }
 
-            if (empty($tokens)) {
-                return response()->json(['success' => false, 'message' => 'No active tokens found']);
+            if (!$recipient) {
+                return response()->json(['success' => false, 'message' => 'Recipient not found']);
             }
 
-            $notificationService = new \App\Services\NotificationService();
-            $notificationService->sendPushNotification($tokens, [
-                'title' => 'رسالة جديدة من ' . $request->sender_name,
-                'body' => $request->message,
-                'type' => 'chat',
+            $notificationService->sendChatNotification($recipient, [
                 'chat_id' => $request->chat_id,
-                'click_action' => 'FLUTTER_NOTIFICATION_CLICK'
+                'message' => $request->message,
+                'sender_name' => $request->sender_name,
             ]);
 
             return response()->json(['success' => true]);

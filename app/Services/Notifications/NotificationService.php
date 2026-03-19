@@ -541,6 +541,78 @@ class NotificationService
         }
     }
 
+    public function sendChatNotification($recipient, array $data): void
+    {
+        try {
+            $title = 'رسالة جديدة من ' . ($data['sender_name'] ?? 'محيط المندوب');
+            $body = $data['message'];
+            
+            // Save to database
+            $this->saveNotificationToDatabase($recipient, [
+                'type' => 'chat',
+                'title' => $title,
+                'body' => $body,
+                'data' => [
+                    'type' => 'chat',
+                    'chat_id' => $data['chat_id'],
+                    'message' => $body,
+                    'sender_name' => $data['sender_name'] ?? null,
+                ],
+            ]);
+
+            // Attempt FCM
+            try {
+                // Get tokens manually if we are not using the standard notify() system 
+                // OR better, use the existng sendPushNotification logic if available.
+                // For chat, we often need multiple tokens.
+                
+                $tokens = [];
+                if ($recipient instanceof \App\Models\Representative) {
+                    $tokens = \App\Models\FcmToken::where('representative_id', $recipient->id)->pluck('token')->toArray();
+                } else if ($recipient instanceof \App\Models\User) {
+                    $tokens = \App\Models\FcmToken::where('user_id', $recipient->id)->pluck('token')->toArray();
+                }
+
+                if (!empty($tokens)) {
+                    $this->sendPushNotification($tokens, [
+                        'title' => $title,
+                        'body' => $body,
+                        'type' => 'chat',
+                        'chat_id' => $data['chat_id'],
+                        'click_action' => 'FLUTTER_NOTIFICATION_CLICK'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('FCM Error (Chat): ' . $e->getMessage());
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to process chat notification', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Send raw push notification via Firebase
+     */
+    public function sendPushNotification(array $tokens, array $data): void
+    {
+        try {
+            $factory = (new \Kreait\Firebase\Factory)->withServiceAccount(storage_path('app/firebase-auth.json'));
+            $messaging = $factory->createMessaging();
+
+            $message = \Kreait\Firebase\Messaging\CloudMessage::fromArray([
+                'notification' => [
+                    'title' => $data['title'],
+                    'body' => $data['body'],
+                ],
+                'data' => $data,
+            ]);
+
+            $messaging->sendMulticast($message, $tokens);
+        } catch (\Exception $e) {
+            Log::error('Firebase Messaging Error: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Check if product has low stock
      */
