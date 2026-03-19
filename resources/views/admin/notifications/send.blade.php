@@ -217,6 +217,7 @@
             // Dynamically update the target_type radio value
             const specificRadio = document.getElementById('target_specific');
             specificRadio.value = type === 'representative' ? 'specific_representative' : 'specific_user';
+            specificRadio.checked = true; // IMPORTANT: Actually check the radio button!
 
             selectedBadge.style.display = 'block';
             searchResults.style.display = 'none';
