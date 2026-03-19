@@ -172,16 +172,23 @@ class RepresentativeFinancialController extends Controller
             ], 422);
         }
 
-        $withdrawal = WithdrawalRequest::create([
-            'representative_id' => $rep->id,
-            'amount'            => $request->amount,
-            'method'            => $request->method,
-            'phone_number'      => $request->phone_number,
-            'account_number'    => $request->account_number,
-            'status'            => WithdrawalStatus::PENDING,
-            'notes'             => $request->notes,
-            'requested_at'      => now(),
-        ]);
+        try {
+            $withdrawal = WithdrawalRequest::create([
+                'representative_id' => $rep->id,
+                'amount'            => $request->amount,
+                'method'            => $request->method,
+                'phone_number'      => $request->phone_number,
+                'account_number'    => $request->account_number,
+                'status'            => WithdrawalStatus::PENDING,
+                'notes'             => $request->notes,
+                'requested_at'      => now(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'تعذر حفظ طلب السحب. تأكد من تحديث قاعدة البيانات على السيرفر.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
 
         return response()->json([
             'message' => 'تم تقديم طلب السحب بنجاح. سيتم مراجعته قريباً.',
