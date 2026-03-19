@@ -235,6 +235,19 @@
                             <div class="small text-success">متصل</div>
                         </div>
                     </div>
+                    <div class="dropdown">
+                        <a href="javascript:void(0);" class="text-muted fs-20" data-bs-toggle="dropdown">
+                            <i class="bx bx-dots-vertical-rounded"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="window.chatApp.deleteChat(false)">
+                                <i class="bx bx-trash me-2"></i>حذف الدردشة لدي
+                            </a>
+                            <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="window.chatApp.deleteChat(true)">
+                                <iconify-icon icon="solar:trash-bin-trash-bold" class="me-2"></iconify-icon>حذف للجميع
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Messages -->

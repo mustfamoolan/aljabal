@@ -162,15 +162,21 @@ class AdminChat {
         container.innerHTML = messages.map(msg => {
             const isMe = msg.sender_id === this.currentUid;
             const time = msg.time ? new Date(msg.time.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            
+            // Filter out messages hidden for me
+            if (msg.hidden_for && msg.hidden_for.includes(this.currentUid)) return '';
+
             const replyHtml = msg.reply_to ? `
-                <div class="reply-preview-in-msg mb-1 p-2 rounded bg-dark bg-opacity-10 small">
-                    <div class="fw-bold">${msg.reply_to_name || ''}</div>
-                    <div class="text-truncate">${msg.reply_to}</div>
+                <div class="reply-preview-in-msg mb-1 p-2 rounded bg-dark bg-opacity-10 small" 
+                     style="cursor: pointer" 
+                     onclick="window.chatApp.scrollToMessage('${msg.reply_to_id}')">
+                    <div class="fw-bold text-primary">${msg.reply_to_name || ''}</div>
+                    <div class="text-truncate" style="max-width: 250px;">${msg.reply_to}</div>
                 </div>
             ` : '';
 
             return `
-                <div class="message ${isMe ? 'sent' : 'received'}" oncontextmenu="window.chatApp.showMsgMenu(event, '${msg.id}')">
+                <div id="msg-${msg.id}" class="message ${isMe ? 'sent' : 'received'}" oncontextmenu="window.chatApp.showMsgMenu(event, '${msg.id}')">
                     ${replyHtml}
                     <div class="msg-text">${msg.text}</div>
                     <span class="message-time">${time}</span>
@@ -179,6 +185,19 @@ class AdminChat {
         }).join('');
         
         container.scrollTop = container.scrollHeight;
+    }
+
+    scrollToMessage(msgId) {
+        const element = document.getElementById(`msg-${msgId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.style.transition = 'background-color 0.5s';
+            const originalBg = element.classList.contains('sent') ? '#007bff' : '#fff';
+            element.style.backgroundColor = '#ffffcc';
+            setTimeout(() => {
+                element.style.backgroundColor = originalBg;
+            }, 1000);
+        }
     }
 
     setReplyingTo(msgId) {
@@ -287,7 +306,8 @@ class AdminChat {
                 time: serverTimestamp(),
                 is_read: false,
                 reply_to: this.replyingTo?.text || null,
-                reply_to_name: this.replyingTo?.name || null
+                reply_to_name: this.replyingTo?.name || null,
+                reply_to_id: this.replyingTo?.id || null
             };
 
             this.clearReply();
