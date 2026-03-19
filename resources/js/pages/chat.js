@@ -388,7 +388,7 @@ class AdminChat {
 
     async loadStaff() {
         try {
-            const response = await fetch('/representative/chat/support-staff');
+            const response = await fetch('/admin/chat/support-staff');
             const data = await response.json();
             this.allStaff = data.staff;
             this.renderStaffList();
