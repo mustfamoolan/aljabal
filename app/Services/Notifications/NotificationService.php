@@ -615,6 +615,19 @@ class NotificationService
                     'title' => $data['title'],
                     'body' => $data['body'],
                 ],
+                'android' => [
+                    'notification' => [
+                        'sound' => $data['sound'] ?? 'notification',
+                        'channel_id' => $data['channel_id'] ?? 'chat_channel',
+                    ],
+                ],
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => ($data['sound'] ?? 'notification') . '.caf',
+                        ],
+                    ],
+                ],
                 'data' => $data,
             ]);
 
