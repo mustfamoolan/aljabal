@@ -35,11 +35,14 @@ class RepresentativeFinancialController extends Controller
             ->where('status', WithdrawalStatus::PENDING)
             ->sum('amount');
 
+        $minWithdrawalAmount = \App\Models\WithdrawalSetting::getMinWithdrawalForRepresentative($rep);
+
         return response()->json([
             'balance'             => (float) $rep->balance,
             'total_earnings'      => (float) $totalEarnings,
             'monthly_earnings'    => (float) $monthlyEarnings,
             'pending_withdrawals' => (float) $pendingWithdrawals,
+            'min_withdrawal_amount' => (float) $minWithdrawalAmount,
         ]);
     }
 
@@ -124,15 +127,21 @@ class RepresentativeFinancialController extends Controller
     public function storeWithdrawal(Request $request): JsonResponse
     {
         $rep = $request->user();
+        $minAmount = \App\Models\WithdrawalSetting::getMinWithdrawalForRepresentative($rep);
 
         $validator = Validator::make($request->all(), [
-            'amount'       => ['required', 'numeric', 'min:15000'],
-            'method'       => ['required', 'in:zaincash,superqi,balance,buy_books'],
-            'phone_number' => ['required_if:method,zaincash,superqi', 'nullable', 'string', 'max:20'],
-            'notes'        => ['nullable', 'string', 'max:500'],
+            'amount'         => ['required', 'numeric', 'min:' . $minAmount],
+            'method'         => ['required', 'in:zaincash,superqi,balance,buy_books'],
+            'phone_number'   => ['required_if:method,zaincash,balance', 'nullable', 'string', 'max:20'],
+            'account_number' => ['nullable', 'string', 'max:50', function ($attribute, $value, $fail) use ($request) {
+                if ($request->method === 'superqi' && empty($request->phone_number) && empty($value)) {
+                    $fail('يجب إدخال رقم الهاتف أو رقم الحساب لطريقة سوبر كي.');
+                }
+            }],
+            'notes'          => ['nullable', 'string', 'max:500'],
         ], [
             'amount.required'       => 'المبلغ مطلوب.',
-            'amount.min'            => 'الحد الأدنى للسحب هو 15,000 د.ع.',
+            'amount.min'            => "الحد الأدنى للسحب هو " . number_format($minAmount) . " د.ع.",
             'method.required'       => 'طريقة السحب مطلوبة.',
             'method.in'             => 'طريقة السحب غير صالحة.',
             'phone_number.required_if' => 'رقم الهاتف مطلوب لهذه الطريقة.',
@@ -168,6 +177,7 @@ class RepresentativeFinancialController extends Controller
             'amount'            => $request->amount,
             'method'            => $request->method,
             'phone_number'      => $request->phone_number,
+            'account_number'    => $request->account_number,
             'status'            => WithdrawalStatus::PENDING,
             'notes'             => $request->notes,
             'requested_at'      => now(),
