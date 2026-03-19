@@ -37,7 +37,7 @@ class RepresentativeAccountService
             ];
             $finalDescription = $description ?? ($defaultDescriptions[$type] ?? 'إضافة رصيد');
 
-            return RepresentativeTransaction::create([
+            $tx = RepresentativeTransaction::create([
                 'representative_id' => $representative->id,
                 'type' => TransactionType::from($type),
                 'amount' => $amount,
@@ -47,6 +47,17 @@ class RepresentativeAccountService
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
             ]);
+
+            // Send notification to representative
+            try {
+                app(\App\Services\Notifications\NotificationService::class)->sendBalanceAddedNotification(
+                    $representative, $type, $amount, $finalDescription
+                );
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Balance notification error: ' . $e->getMessage());
+            }
+
+            return $tx;
         });
     }
 
@@ -64,7 +75,7 @@ class RepresentativeAccountService
             $representative->decrement('balance', $amount);
             $balanceAfter = (float) $representative->fresh()->balance;
 
-            return RepresentativeTransaction::create([
+            $tx = RepresentativeTransaction::create([
                 'representative_id' => $representative->id,
                 'type' => TransactionType::WITHDRAWAL,
                 'amount' => $amount,
@@ -74,6 +85,17 @@ class RepresentativeAccountService
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
             ]);
+
+            // Send notification to representative
+            try {
+                app(\App\Services\Notifications\NotificationService::class)->sendBalanceAddedNotification(
+                    $representative, 'deduction', $amount, $description
+                );
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Deduction notification error: ' . $e->getMessage());
+            }
+
+            return $tx;
         });
     }
 

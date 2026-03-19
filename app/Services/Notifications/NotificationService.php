@@ -372,6 +372,63 @@ class NotificationService
         }
     }
 
+    /**
+     * Send financial balance notification to representative (earning, bonus, commission, deduction, etc.)
+     */
+    public function sendBalanceAddedNotification(
+        \App\Models\Representative $representative,
+        string $type,
+        float $amount,
+        string $description
+    ): void {
+        try {
+            $isPositive = in_array($type, ['earning', 'commission', 'deposit', 'bonus']);
+
+            $typeLabels = [
+                'earning'    => 'مكسب جديد',
+                'commission' => 'عمولة جديدة',
+                'deposit'    => 'إيداع رصيد',
+                'bonus'      => 'مكافأة',
+                'deduction'  => 'خصم من الرصيد',
+                'withdrawal' => 'سحب رصيد',
+            ];
+            $title = $typeLabels[$type] ?? 'تحديث الحساب المالي';
+            $body = ($isPositive ? '+' : '-') . number_format($amount) . ' د.ع: ' . $description;
+
+            // Save to DB
+            $this->saveNotificationToDatabase($representative, [
+                'type'  => 'financial',
+                'title' => $title,
+                'body'  => $body,
+                'data'  => ['type' => $type, 'amount' => $amount, 'description' => $description],
+            ]);
+
+            // Attempt FCM via WithdrawalStatusNotification (reuse) or custom
+            try {
+                $notification = new \App\Notifications\WithdrawalStatusNotification(
+                    new \App\Models\WithdrawalRequest(['amount' => $amount]),
+                    $type,
+                    null
+                );
+                // Use CustomAdminNotification which is simpler
+                $representative->notify(new \App\Notifications\CustomAdminNotification($title, $body, [
+                    'type' => 'financial',
+                    'amount' => $amount,
+                ]));
+            } catch (\Exception $e) {
+                Log::error('FCM Error (BalanceAdded): ' . $e->getMessage());
+            }
+
+            Log::info('Balance notification sent', [
+                'representative_id' => $representative->id,
+                'type' => $type,
+                'amount' => $amount,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send balance notification', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function sendNewProductNotification(Product $product): void
     {
         try {
