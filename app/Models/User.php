@@ -110,9 +110,9 @@ class User extends Authenticatable
     /**
      * Get the notifications for the user.
      */
-    public function notifications(): HasMany
+    public function notifications(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
-        return $this->hasMany(\App\Models\Notification::class);
+        return $this->morphMany(\App\Models\Notification::class, 'notifiable');
     }
 
     /**

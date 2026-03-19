@@ -118,10 +118,12 @@ class NotificationService
     /**
      * Save notification to database
      */
-    public function saveNotificationToDatabase(User $user, array $data): Notification
+    public function saveNotificationToDatabase($notifiable, array $data): Notification
     {
         return Notification::create([
-            'user_id' => $user->id,
+            'notifiable_id' => $notifiable->id,
+            'notifiable_type' => get_class($notifiable),
+            'user_id' => $notifiable instanceof User ? $notifiable->id : null,
             'type' => $data['type'],
             'title' => $data['title'],
             'body' => $data['body'],
@@ -272,8 +274,39 @@ class NotificationService
                         ],
                     ]);
                 } catch (\Exception $e) {
-                    Log::error('Error sending order status notification', [
+                    Log::error('Error sending order status notification to admin', [
                         'admin_id' => $admin->id,
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Also notify the representative
+            if ($order->representative) {
+                try {
+                    $representative = $order->representative;
+                    $representative->notify($notification);
+
+                    $this->saveNotificationToDatabase($representative, [
+                        'type' => 'order_status_change',
+                        'title' => 'تحديث حالة الطلب # ' . $order->id,
+                        'body' => "تغيرت حالة الطلب من {$oldStatus} إلى {$newStatus}",
+                        'data' => [
+                            'type' => 'order_status_change',
+                            'id' => $order->id,
+                            'old_status' => $oldStatus,
+                            'new_status' => $newStatus,
+                        ],
+                    ]);
+
+                    Log::info('Order status notification sent to representative', [
+                        'representative_id' => $representative->id,
+                        'order_id' => $order->id,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Error sending order status notification to representative', [
+                        'representative_id' => $order->representative_id,
                         'order_id' => $order->id,
                         'error' => $e->getMessage(),
                     ]);

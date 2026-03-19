@@ -10,6 +10,8 @@ class Notification extends Model
 {
     protected $fillable = [
         'user_id',
+        'notifiable_id',
+        'notifiable_type',
         'type',
         'title',
         'body',
@@ -23,11 +25,11 @@ class Notification extends Model
     ];
 
     /**
-     * Get the user that owns the notification.
+     * Get the notifiable model that owns the notification.
      */
-    public function user(): BelongsTo
+    public function notifiable(): \Illuminate\Database\Eloquent\Relations\MorphTo
     {
-        return $this->belongsTo(User::class);
+        return $this->morphTo();
     }
 
     /**

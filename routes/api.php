@@ -178,5 +178,13 @@ Route::prefix('representative')->group(function () {
         Route::get('/orders/checkout', [\App\Http\Controllers\Api\Representatives\OrderController::class, 'checkout']);
         Route::get('/orders/districts/{governorate}', [\App\Http\Controllers\Api\Representatives\OrderController::class, 'getDistricts']);
         Route::get('/orders/{order}', [\App\Http\Controllers\Api\Representatives\OrderController::class, 'show']);
+
+        // Notifications routes
+        Route::get('/notifications', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'index']);
+        Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/mark-as-read', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'markAsRead']);
+        // Alias for GetX/Flutter if needed
+        Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'markAllAsRead']);
+        Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'destroy']);
     });
 });

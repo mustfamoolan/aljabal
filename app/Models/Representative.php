@@ -114,6 +114,14 @@ class Representative extends Authenticatable
     }
 
     /**
+     * Get the notifications for the representative.
+     */
+    public function notifications(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\Notification::class, 'notifiable');
+    }
+
+    /**
      * Get the available balance (after deducting pending withdrawals).
      */
     public function getAvailableBalanceAttribute(): float

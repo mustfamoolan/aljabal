@@ -17,6 +17,7 @@ class NotificationController extends Controller
     {
         $user = auth()->user();
         $filter = $request->get('filter', 'all'); // all, read, unread
+        $type = $request->get('type'); // order, message, financial, system
 
         $query = $user->notifications()->latest();
 
@@ -24,6 +25,10 @@ class NotificationController extends Controller
             $query->read();
         } elseif ($filter === 'unread') {
             $query->unread();
+        }
+
+        if ($type) {
+            $query->where('type', $type);
         }
 
         $notifications = $query->paginate(15);
