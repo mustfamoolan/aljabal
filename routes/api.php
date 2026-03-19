@@ -63,6 +63,12 @@ Route::prefix('admin')->group(function () {
         Route::post('employee-types/{employee_type}/assign-role', [EmployeeTypeController::class, 'assignRole']);
         Route::post('employee-types/{employee_type}/revoke-role', [EmployeeTypeController::class, 'revokeRole']);
 
+        // Notifications routes
+        Route::prefix('notifications')->group(function () {
+            Route::post('send', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'sendCustomNotification']);
+            Route::get('search-recipients', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'searchRecipients']);
+        });
+
         // Settings routes
         Route::prefix('settings')->group(function () {
             // General Settings

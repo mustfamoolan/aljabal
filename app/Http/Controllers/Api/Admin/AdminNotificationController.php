@@ -14,6 +14,8 @@ class AdminNotificationController extends Controller
     public function __construct(
         protected NotificationService $notificationService
     ) {
+        $this->middleware('permission:notifications.send')->only('sendCustomNotification');
+        $this->middleware('permission:notifications.view')->only('searchRecipients');
     }
 
     /**
@@ -91,5 +93,48 @@ class AdminNotificationController extends Controller
                 'message' => 'Failed to send notification: ' . $e->getMessage(),
             ], 500);
         }
+    }
+    /**
+     * Search for recipients (users or representatives)
+     */
+    public function searchRecipients(Request $request): JsonResponse
+    {
+        $query = $request->query('query');
+        if (!$query || strlen($query) < 2) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
+        $users = User::where('name', 'like', "%{$query}%")
+            ->orWhere('phone', 'like', "%{$query}%")
+            ->limit(10)
+            ->get(['id', 'name', 'phone', 'type'])
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name . ' (' . ($user->type?->value ?? 'user') . ')',
+                    'type' => 'user',
+                    'user_type' => $user->type?->value ?? 'user',
+                ];
+            });
+
+        $reps = Representative::where('name', 'like', "%{$query}%")
+            ->orWhere('phone', 'like', "%{$query}%")
+            ->limit(10)
+            ->get(['id', 'name', 'phone'])
+            ->map(function ($rep) {
+                return [
+                    'id' => $rep->id,
+                    'name' => $rep->name . ' (مندوب)',
+                    'type' => 'representative',
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $users->concat($reps),
+        ]);
     }
 }
