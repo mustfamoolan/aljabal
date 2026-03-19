@@ -596,7 +596,13 @@ class NotificationService
     public function sendPushNotification(array $tokens, array $data): void
     {
         try {
-            $factory = (new \Kreait\Firebase\Factory)->withServiceAccount(storage_path('app/firebase-auth.json'));
+            $credentialsPath = config('firebase.projects.app.credentials');
+            // If the path is not absolute and doesn't exist, try prepending base_path
+            if (!file_exists($credentialsPath)) {
+                $credentialsPath = base_path($credentialsPath);
+            }
+
+            $factory = (new \Kreait\Firebase\Factory)->withServiceAccount($credentialsPath);
             $messaging = $factory->createMessaging();
 
             $message = \Kreait\Firebase\Messaging\CloudMessage::fromArray([
