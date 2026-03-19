@@ -79,7 +79,8 @@ export default defineConfig({
                 'resources/js/pages/categories-dynamic.js',
                 'resources/js/pages/tags-management.js',
                 'resources/js/pages/representative-orders-create.js',
-                'resources/js/representative-bottom-nav.js'
+                'resources/js/representative-bottom-nav.js',
+                'resources/js/pages/chat.js'
             ],
             refresh: true,
         }),
