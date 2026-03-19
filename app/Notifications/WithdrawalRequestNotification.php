@@ -37,18 +37,19 @@ class WithdrawalRequestNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         $representative = $this->withdrawalRequest->representative;
+        $title = 'طلب سحب جديد';
+        $body = "طلب سحب جديد من {$representative->name} بمبلغ " . number_format($this->withdrawalRequest->amount) . " د.ع";
 
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'withdrawal_request',
                 'id' => (string) $this->withdrawalRequest->id,
-                'representative_name' => $representative->name,
-                'amount' => (string) $this->withdrawalRequest->amount,
+                'representative_id' => (string) $this->withdrawalRequest->representative_id, // Assuming representative_id exists on withdrawalRequest or is derived
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
-                    ->setTitle('طلب سحب جديد')
-                    ->setBody("طلب سحب جديد من {$representative->name} بمبلغ " . number_format($this->withdrawalRequest->amount) . " د.ع")
+                    ->setTitle($title)
+                    ->setBody($body)
             );
     }
 

@@ -37,13 +37,13 @@ class NewOrderNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'order',
                 'id' => (string) $this->order->id,
                 'customer_name' => $this->order->customer_name,
                 'total_amount' => (string) $this->order->total_amount,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle('طلب جديد # ' . $this->order->id)
                     ->setBody("تم استلام طلب جديد من {$this->order->customer_name} بمبلغ " . number_format($this->order->total_amount) . " د.ع")

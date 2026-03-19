@@ -27,21 +27,21 @@ class CustomAdminNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         $fcmMessage = FcmMessage::create()
-            ->setData(array_merge([
+            ->data(array_merge([
                 'type' => 'custom',
             ], array_map('strval', $this->data)))
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle($this->title)
                     ->setBody($this->body)
             );
 
         if (isset($this->data['image']) && !empty($this->data['image'])) {
-            $fcmMessage->setNotification(
+            $fcmMessage->notification(
                 FcmNotification::create()
                     ->setTitle($this->title)
                     ->setBody($this->body)
-                    ->setImage($this->data['image'])
+                    ->image($this->data['image'])
             );
         }
 

@@ -39,15 +39,14 @@ class LowStockNotification extends Notification
         $productUrl = route('inventory.products.show', $this->product);
 
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'low_stock',
-                'product_id' => (string) $this->product->id,
-                'product_name' => $this->product->name,
+                'id' => (string) $this->product->id,
+                'name' => $this->product->name,
                 'quantity' => (string) $this->product->quantity,
-                'min_quantity' => (string) $this->product->min_quantity,
                 'url' => $productUrl,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle('تنبيه: مخزون منخفض')
                     ->setBody("المنتج {$this->product->name} وصل للحد الأدنى. الكمية: {$this->product->quantity}")

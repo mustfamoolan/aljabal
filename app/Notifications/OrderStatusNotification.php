@@ -39,13 +39,13 @@ class OrderStatusNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'order_status_change',
                 'id' => (string) $this->order->id,
                 'old_status' => $this->oldStatus,
                 'new_status' => $this->newStatus,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle('تحديث حالة الطلب # ' . $this->order->id)
                     ->setBody("تغيرت حالة الطلب من {$this->oldStatus} إلى {$this->newStatus}")

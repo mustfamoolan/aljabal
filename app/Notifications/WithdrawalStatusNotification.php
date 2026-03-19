@@ -33,13 +33,13 @@ class WithdrawalStatusNotification extends Notification
             : "تم رفض طلب السحب الخاص بك. السبب: " . ($this->reason ?? 'غير محدد');
 
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'withdrawal_status',
                 'id' => (string) $this->request->id,
                 'status' => $this->status,
                 'amount' => (string) $this->request->amount,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle($title)
                     ->setBody($body)

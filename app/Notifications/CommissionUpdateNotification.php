@@ -27,12 +27,12 @@ class CommissionUpdateNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'commission_update',
                 'new_value' => (string) $this->setting->commission_value,
                 'old_value' => (string) $this->oldValue,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle('تحديث عمولة التجهيز')
                     ->setBody("تم تغيير قيمة عمولة التجهيز إلى " . number_format($this->setting->commission_value) . " د.ع")

@@ -19,13 +19,15 @@ class RepresentativeFinancialController extends Controller
     {
         $rep = $request->user();
 
+        $earningTypes = ['earning', 'commission', 'bonus'];
+
         $totalEarnings = $rep->transactions()
-            ->where('type', 'earning')
+            ->whereIn('type', $earningTypes)
             ->where('status', 'completed')
             ->sum('amount');
 
         $monthlyEarnings = $rep->transactions()
-            ->where('type', 'earning')
+            ->whereIn('type', $earningTypes)
             ->where('status', 'completed')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)

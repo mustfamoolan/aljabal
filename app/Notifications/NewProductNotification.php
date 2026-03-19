@@ -26,12 +26,12 @@ class NewProductNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'new_product',
                 'id' => (string) $this->product->id,
                 'name' => $this->product->name,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle('منتج جديد متوفر')
                     ->setBody("تمت إضافة منتج جديد للمخزن: {$this->product->name}")

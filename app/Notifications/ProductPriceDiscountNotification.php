@@ -28,13 +28,13 @@ class ProductPriceDiscountNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         return FcmMessage::create()
-            ->setData([
+            ->data([
                 'type' => 'price_discount',
                 'id' => (string) $this->product->id,
                 'old_price' => (string) $this->oldPrice,
                 'new_price' => (string) $this->newPrice,
             ])
-            ->setNotification(
+            ->notification(
                 FcmNotification::create()
                     ->setTitle("تخفيض على السعر: {$this->product->name}")
                     ->setBody("تم تخفيض السعر من " . number_format($this->oldPrice) . " إلى " . number_format($this->newPrice) . " د.ع")
