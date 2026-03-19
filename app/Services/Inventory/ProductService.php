@@ -160,6 +160,9 @@ class ProductService
                 $this->notificationService->sendLowStockNotification($product);
             }
 
+            // Notify all representatives about the new product
+            $this->notificationService->sendNewProductNotification($product);
+
             return $product;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -187,7 +190,14 @@ class ProductService
             unset($data['images'], $data['tags']);
 
             // Update product
+            $oldPrice = (float) $product->customer_price;
             $product->update($data);
+            $newPrice = (float) $product->fresh()->customer_price;
+
+            // Check for price discount
+            if ($newPrice < $oldPrice && $newPrice > 0) {
+                $this->notificationService->sendProductPriceDiscountNotification($product, $oldPrice, $newPrice);
+            }
 
             \Illuminate\Support\Facades\Log::info('Product updated in database', [
                 'product_id' => $product->id,

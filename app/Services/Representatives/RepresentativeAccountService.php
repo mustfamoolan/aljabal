@@ -146,20 +146,12 @@ class RepresentativeAccountService
             $representative->decrement('balance', $request->amount);
             $balanceAfter = (float) $representative->fresh()->balance;
 
-            // Create transaction
-            RepresentativeTransaction::create([
-                'representative_id' => $representative->id,
-                'type' => TransactionType::WITHDRAWAL,
-                'amount' => $request->amount,
-                'status' => TransactionStatus::COMPLETED,
-                'description' => "سحب رصيد - طلب #{$request->id}",
-                'withdrawal_request_id' => $request->id,
-                'created_by' => $user->id,
-                'approved_by' => $user->id,
-                'approved_at' => now(),
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
             ]);
+
+            // Notify representative
+            app(\App\Services\Notifications\NotificationService::class)->sendWithdrawalStatusNotification($request, 'approved');
         });
     }
 
@@ -169,6 +161,9 @@ class RepresentativeAccountService
     public function rejectWithdrawalRequest(WithdrawalRequest $request, User $user, string $reason): void
     {
         $request->reject($user, $reason);
+
+        // Notify representative
+        app(\App\Services\Notifications\NotificationService::class)->sendWithdrawalStatusNotification($request, 'rejected', $reason);
     }
 
     /**

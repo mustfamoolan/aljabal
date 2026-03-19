@@ -116,6 +116,7 @@ Route::prefix('admin')->group(function () {
         Route::post('/notifications/{notification}/mark-as-read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
         Route::post('/notifications/mark-all-as-read', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
         Route::delete('/notifications/{id}', [\App\Http\Controllers\NotificationController::class, 'destroy']);
+        Route::post('/notifications/send-custom', [\App\Http\Controllers\Api\Admin\AdminNotificationController::class, 'sendCustomNotification'])->name('api.admin.notifications.send-custom');
 
         // AI routes
         Route::post('/ai/generate-product-description', [\App\Http\Controllers\Api\AI\ProductDescriptionController::class, 'generate'])->name('api.admin.ai.generate-product-description');
@@ -186,5 +187,9 @@ Route::prefix('representative')->group(function () {
         // Alias for GetX/Flutter if needed
         Route::post('/notifications/mark-all-read', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'markAllAsRead']);
         Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Representatives\NotificationApiController::class, 'destroy']);
+
+        // FCM routes for representatives
+        Route::post('/fcm/token', [\App\Http\Controllers\Api\FCMController::class, 'storeToken'])->name('api.representative.fcm.token.store');
+        Route::delete('/fcm/token', [\App\Http\Controllers\Api\FCMController::class, 'removeToken'])->name('api.representative.fcm.token.remove');
     });
 });

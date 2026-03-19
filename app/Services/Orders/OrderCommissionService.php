@@ -45,7 +45,14 @@ class OrderCommissionService
      */
     public function updateCommissionSetting(OrderPreparationCommissionSetting $setting, array $data): bool
     {
-        return $setting->update($data);
+        $oldValue = (float) $setting->commission_value;
+        $updated = $setting->update($data);
+        
+        if ($updated && isset($data['commission_value']) && (float)$data['commission_value'] !== $oldValue) {
+            app(\App\Services\Notifications\NotificationService::class)->sendCommissionUpdateNotification($setting->fresh(), $oldValue);
+        }
+
+        return $updated;
     }
 
     /**

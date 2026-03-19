@@ -5,7 +5,19 @@ namespace App\Services\Notifications;
 use App\Models\Notification;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\Representative;
+use App\Models\Order;
+use App\Models\WithdrawalRequest;
+use App\Models\OrderPreparationCommissionSetting;
 use App\Notifications\LowStockNotification;
+use App\Notifications\NewOrderNotification;
+use App\Notifications\OrderStatusNotification;
+use App\Notifications\WithdrawalRequestNotification;
+use App\Notifications\WithdrawalStatusNotification;
+use App\Notifications\NewProductNotification;
+use App\Notifications\ProductPriceDiscountNotification;
+use App\Notifications\CommissionUpdateNotification;
+use App\Notifications\CustomAdminNotification;
 use Illuminate\Support\Facades\Log;
 
 class NotificationService
@@ -317,6 +329,125 @@ class NotificationService
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Send withdrawal status notification to representative
+     */
+    public function sendWithdrawalStatusNotification(WithdrawalRequest $request, string $status, ?string $reason = null): void
+    {
+        try {
+            $representative = $request->representative;
+            if (!$representative) return;
+
+            $notification = new WithdrawalStatusNotification($request, $status, $reason);
+            $representative->notify($notification);
+
+            $this->saveNotificationToDatabase($representative, [
+                'type' => 'financial',
+                'title' => 'تحديث طلب السحب',
+                'body' => $status === 'approved' 
+                    ? "تم الموافقة على طلب السحب الخاص بك بمبلغ " . number_format($request->amount) . " د.ع"
+                    : "تم رفض طلب السحب الخاص بك. السبب: " . ($reason ?? 'غير محدد'),
+                'data' => [
+                    'type' => 'withdrawal_status',
+                    'id' => $request->id,
+                    'status' => $status,
+                    'amount' => $request->amount,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send withdrawal status notification', ['request_id' => $request->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Send new product notification to all representatives
+     */
+    public function sendNewProductNotification(Product $product): void
+    {
+        try {
+            $representatives = Representative::where('is_active', true)->get();
+            $notification = new NewProductNotification($product);
+
+            foreach ($representatives as $rep) {
+                $rep->notify($notification);
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'product',
+                    'title' => 'منتج جديد متوفر',
+                    'body' => "تمت إضافة منتج جديد للمخزن: {$product->name}",
+                    'data' => ['type' => 'new_product', 'id' => $product->id],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send new product notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Send product price discount notification
+     */
+    public function sendProductPriceDiscountNotification(Product $product, float $oldPrice, float $newPrice): void
+    {
+        try {
+            $representatives = Representative::where('is_active', true)->get();
+            $notification = new ProductPriceDiscountNotification($product, $oldPrice, $newPrice);
+
+            foreach ($representatives as $rep) {
+                $rep->notify($notification);
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'product',
+                    'title' => "تخفيض على السعر: {$product->name}",
+                    'body' => "تم تخفيض السعر من " . number_format($oldPrice) . " إلى " . number_format($newPrice) . " د.ع",
+                    'data' => ['type' => 'price_discount', 'id' => $product->id, 'old_price' => $oldPrice, 'new_price' => $newPrice],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send product discount notification', ['product_id' => $product->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Send commission update notification
+     */
+    public function sendCommissionUpdateNotification(OrderPreparationCommissionSetting $setting, float $oldValue): void
+    {
+        try {
+            $representatives = Representative::where('is_active', true)->get();
+            $notification = new CommissionUpdateNotification($setting, $oldValue);
+
+            foreach ($representatives as $rep) {
+                $rep->notify($notification);
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'settings',
+                    'title' => 'تحديث عمولة التجهيز',
+                    'body' => "تم تغيير قيمة عمولة التجهيز إلى " . number_format($setting->commission_value) . " د.ع",
+                    'data' => ['type' => 'commission_update', 'new_value' => $setting->commission_value],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send commission update notification', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Send custom notification
+     */
+    public function sendCustomNotification($recipient, string $title, string $body, array $data = []): void
+    {
+        try {
+            $notification = new CustomAdminNotification($title, $body, $data);
+            $recipient->notify($notification);
+
+            $this->saveNotificationToDatabase($recipient, [
+                'type' => 'admin_msg',
+                'title' => $title,
+                'body' => $body,
+                'data' => array_merge(['type' => 'custom'], $data),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send custom notification', ['recipient_id' => $recipient->id, 'error' => $e->getMessage()]);
         }
     }
 
