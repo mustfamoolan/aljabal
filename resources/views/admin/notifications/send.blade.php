@@ -198,7 +198,7 @@
                                         <iconify-icon icon="solar:add-circle-bold-duotone" class="fs-20 text-primary"></iconify-icon>
                                     </div>
                                 `;
-                                btn.onclick = () => selectRecipient(item.id, item.name);
+                                btn.onclick = () => selectRecipient(item.id, item.name, item.type);
                                 searchResults.appendChild(btn);
                             });
                             searchResults.style.display = 'block';
@@ -210,9 +210,14 @@
             }, 500);
         });
 
-        function selectRecipient(id, name) {
+        function selectRecipient(id, name, type) {
             targetIdInput.value = id;
             selectedName.innerText = name;
+            
+            // Dynamically update the target_type radio value
+            const specificRadio = document.getElementById('target_specific');
+            specificRadio.value = type === 'representative' ? 'specific_representative' : 'specific_user';
+
             selectedBadge.style.display = 'block';
             searchResults.style.display = 'none';
             searchQuery.value = '';
