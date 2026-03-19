@@ -114,6 +114,16 @@
                         <span class="nav-text"> إرسال إشعار </span>
                     </a>
                 </li>
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('admin.chat.index') }}">
+                        <span class="nav-icon">
+                            <iconify-icon icon="solar:chat-round-dots-bold-duotone"></iconify-icon>
+                        </span>
+                        <span class="nav-text"> المحادثات المباشرة </span>
+                        <span class="badge bg-danger rounded-pill ms-auto d-none" id="chat-unread-count">0</span>
+                    </a>
+                </li>
             @endif
 
             @if(auth()->user()->isAdmin() || auth()->user()->can('admin.access') || auth()->user()->can('tags.view'))

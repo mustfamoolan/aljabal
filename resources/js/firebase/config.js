@@ -6,6 +6,8 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -29,12 +31,20 @@ if (typeof window !== 'undefined') {
 
 // Initialize Messaging (only in browser environment and if service worker is supported)
 let messaging = null;
-if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    try {
-        messaging = getMessaging(app);
-    } catch (error) {
-        console.warn('Firebase Messaging initialization failed:', error);
+let db = null;
+let auth = null;
+
+if (typeof window !== 'undefined') {
+    db = getFirestore(app);
+    auth = getAuth(app);
+    
+    if ('serviceWorker' in navigator) {
+        try {
+            messaging = getMessaging(app);
+        } catch (error) {
+            console.warn('Firebase Messaging initialization failed:', error);
+        }
     }
 }
 
-export { app, analytics, messaging, firebaseConfig };
+export { app, analytics, messaging, db, auth, firebaseConfig };

@@ -205,5 +205,11 @@ Route::prefix('representative')->group(function () {
             Route::get('/withdrawals', [\App\Http\Controllers\Api\Representatives\RepresentativeFinancialController::class, 'withdrawalRequests']);
             Route::post('/withdraw', [\App\Http\Controllers\Api\Representatives\RepresentativeFinancialController::class, 'storeWithdrawal']);
         });
+
+        // Chat routes for representatives
+        Route::prefix('chat')->group(function () {
+            Route::get('/firebase-token', [\App\Http\Controllers\Api\ChatController::class, 'getFirebaseToken']);
+            Route::get('/support-staff', [\App\Http\Controllers\Api\ChatController::class, 'getSupportStaff']);
+        });
     });
 });

@@ -195,4 +195,11 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::post('/send', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'store'])->name('store')->middleware('permission:notifications.send');
         Route::get('/search-recipients', [\App\Http\Controllers\Admin\AdminNotificationController::class, 'searchRecipients'])->name('search-recipients')->middleware('permission:notifications.view');
     });
+
+    // Chat
+    Route::prefix('chat')->name('admin.chat.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\ChatController::class, 'index'])->name('index');
+        Route::get('/firebase-token', [\App\Http\Controllers\Api\ChatController::class, 'getWebFirebaseToken'])->name('firebase-token');
+        Route::get('/representatives', [\App\Http\Controllers\Api\ChatController::class, 'getRepresentatives'])->name('representatives');
+    });
 });
