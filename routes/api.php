@@ -197,5 +197,13 @@ Route::prefix('representative')->group(function () {
         // FCM routes for representatives
         Route::post('/fcm/token', [\App\Http\Controllers\Api\FCMController::class, 'storeToken'])->name('api.representative.fcm.token.store');
         Route::delete('/fcm/token', [\App\Http\Controllers\Api\FCMController::class, 'removeToken'])->name('api.representative.fcm.token.remove');
+
+        // Financial routes for representatives
+        Route::prefix('financial')->group(function () {
+            Route::get('/summary', [\App\Http\Controllers\Api\Representatives\RepresentativeFinancialController::class, 'summary']);
+            Route::get('/transactions', [\App\Http\Controllers\Api\Representatives\RepresentativeFinancialController::class, 'transactions']);
+            Route::get('/withdrawals', [\App\Http\Controllers\Api\Representatives\RepresentativeFinancialController::class, 'withdrawalRequests']);
+            Route::post('/withdraw', [\App\Http\Controllers\Api\Representatives\RepresentativeFinancialController::class, 'storeWithdrawal']);
+        });
     });
 });
