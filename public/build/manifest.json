@@ -35,8 +35,8 @@
       "__commonjsHelpers-CE1G-McA.js"
     ]
   },
-  "_config-DwCFrIT_.js": {
-    "file": "assets/config-DwCFrIT_.js",
+  "_config-BraHb9HH.js": {
+    "file": "assets/config-BraHb9HH.js",
     "name": "config"
   },
   "_dropzone-Cby8df4V.js": {
@@ -593,12 +593,12 @@
     "isEntry": true
   },
   "resources/js/pages/chat.js": {
-    "file": "assets/chat-DY37uAzz.js",
+    "file": "assets/chat-D33BAhe5.js",
     "name": "chat",
     "src": "resources/js/pages/chat.js",
     "isEntry": true,
     "imports": [
-      "_config-DwCFrIT_.js"
+      "_config-BraHb9HH.js"
     ]
   },
   "resources/js/pages/coming-soon.js": {
@@ -667,12 +667,12 @@
     ]
   },
   "resources/js/pages/notifications.js": {
-    "file": "assets/notifications-Cc8fmZup.js",
+    "file": "assets/notifications-DzI7AJZs.js",
     "name": "notifications",
     "src": "resources/js/pages/notifications.js",
     "isEntry": true,
     "imports": [
-      "_config-DwCFrIT_.js"
+      "_config-BraHb9HH.js"
     ]
   },
   "resources/js/pages/product-ai-generator.js": {

@@ -59,14 +59,20 @@ class AdminChat {
 
     listenToChats() {
         const chatsRef = collection(db, 'chats');
+        // Use only arrayContains without orderBy to avoid requiring a composite index
         const q = query(
             chatsRef, 
-            where('participants', 'arrayContains', this.currentUid),
-            orderBy('last_time', 'desc')
+            where('participants', 'array-contains', this.currentUid)
         );
 
         this.unsubscribeChats = onSnapshot(q, (snapshot) => {
-            this.chats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            this.chats = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => {
+                    const aTime = a.last_time?.seconds || 0;
+                    const bTime = b.last_time?.seconds || 0;
+                    return bTime - aTime; // Sort descending
+                });
             this.renderChatList();
         });
     }
@@ -195,20 +201,24 @@ class AdminChat {
         const form = document.getElementById('message-form');
         const input = document.getElementById('message-input');
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = input.value;
-            if (text.trim()) {
-                this.sendMessage(text);
-                input.value = '';
-            }
-        });
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const text = input.value;
+                if (text.trim()) {
+                    this.sendMessage(text);
+                    input.value = '';
+                }
+            });
+        }
 
         // Search reps
         const searchInput = document.getElementById('search-reps');
-        searchInput.addEventListener('input', (e) => {
-            this.renderRepsList(e.target.value);
-        });
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.renderRepsList(e.target.value);
+            });
+        }
     }
 
     async loadRepresentatives() {
