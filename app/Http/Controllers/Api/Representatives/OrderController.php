@@ -154,6 +154,7 @@ class OrderController extends Controller
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'items.*.customer_price' => ['required', 'numeric', 'min:0.01'],
+            'is_withdrawal_order' => ['nullable', 'boolean'],
         ]);
 
         try {

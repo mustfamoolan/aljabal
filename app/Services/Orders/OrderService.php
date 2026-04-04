@@ -102,6 +102,7 @@ class OrderService
                 'gift_id' => $giftId,
                 'gift_box_id' => $giftBoxId,
                 'gift_price' => $giftPrice,
+                'is_withdrawal_order' => $customerData['is_withdrawal_order'] ?? false,
                 'status' => OrderStatus::NEW ,
                 'representative_id' => $representative?->id,
                 'created_by' => $user?->id,
@@ -234,15 +235,29 @@ class OrderService
             // Calculate totals if not already calculated
             $this->calculateOrderTotals($order);
 
-            // Add final profit to representative account
-            if ($order->final_profit > 0) {
-                $this->accountService->addBalance(
-                    $representative,
-                    (float) $order->final_profit,
-                    TransactionType::COMMISSION->value,
-                    "ربح من طلب #{$order->id}",
-                    $order->createdBy
-                );
+            // Deduct balance for withdrawal orders or add profit for standard orders
+            if ($order->is_withdrawal_order) {
+                // Determine deduction amount (books wholesale + delivery fee + gifts offset)
+                $amountToDeduct = (float) $order->total_amount;
+                
+                if ($amountToDeduct > 0) {
+                    $this->accountService->deductBalance(
+                        $representative,
+                        $amountToDeduct,
+                        "خصم إجمالي طلب سحب رصيد (شراء مخفض) - طلب #{$order->id}"
+                    );
+                }
+            } else {
+                // Add final profit to representative account
+                if ($order->final_profit > 0) {
+                    $this->accountService->addBalance(
+                        $representative,
+                        (float) $order->final_profit,
+                        TransactionType::COMMISSION->value,
+                        "ربح من طلب #{$order->id}",
+                        $order->createdBy
+                    );
+                }
             }
 
             // Award Gift Points

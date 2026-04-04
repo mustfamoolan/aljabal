@@ -33,6 +33,7 @@ class Order extends Model
         'gift_id',
         'gift_box_id',
         'gift_price',
+        'is_withdrawal_order',
     ];
 
     protected function casts(): array
@@ -45,6 +46,7 @@ class Order extends Model
             'final_profit' => 'decimal:2',
             'delivery_fee' => 'decimal:2',
             'gift_price' => 'decimal:2',
+            'is_withdrawal_order' => 'boolean',
             'completed_at' => 'datetime',
         ];
     }
