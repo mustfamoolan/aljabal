@@ -134,6 +134,9 @@ class OrderService
                 throw new \Exception("الكمية المطلوبة ({$quantity}) غير متوفرة لهذا المنتج ({$product->name}). المتوفر حالياً: {$product->available_quantity}");
             }
 
+            // Reserve stock from available quantity
+            $product->decrement('available_quantity', $quantity);
+
             $orderItem = OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $product->id,
@@ -164,8 +167,16 @@ class OrderService
             $subtotal = $quantity * $customerPrice;
             $profitSubtotal = $quantity * $profitPerItem;
 
-            if ($product->available_quantity + $orderItem->quantity < $quantity) {
-                throw new \Exception("الكمية المطلوبة ({$quantity}) غير متوفرة لهذا المنتج ({$product->name}). المتوفر حالياً: " . ($product->available_quantity + $orderItem->quantity));
+            $oldQuantity = $orderItem->quantity;
+            $delta = $quantity - $oldQuantity;
+
+            if ($product->available_quantity < $delta) {
+                throw new \Exception("الكمية المطلوبة ({$quantity}) غير متوفرة لهذا المنتج ({$product->name}). المتوفر حالياً: " . ($product->available_quantity + $oldQuantity));
+            }
+
+            // Adjust reserved stock
+            if ($delta != 0) {
+                $product->decrement('available_quantity', $delta);
             }
 
             $orderItem->update([
@@ -190,6 +201,10 @@ class OrderService
     {
         return DB::transaction(function () use ($orderItem) {
             $order = $orderItem->order;
+            
+            // Release reserved stock back to available quantity
+            $orderItem->product->increment('available_quantity', $orderItem->quantity);
+            
             $deleted = $orderItem->delete();
 
             if ($deleted) {
@@ -273,6 +288,11 @@ class OrderService
 
             $oldStatus = $order->status->value;
 
+            // Deduct from physical quantity on completion (already reserved from available_quantity)
+            foreach ($order->items as $item) {
+                $item->product->decrement('quantity', $item->quantity);
+            }
+
             // Update order status
             $order->update([
                 'status' => OrderStatus::COMPLETED,
@@ -300,7 +320,26 @@ class OrderService
             return $this->completeOrder($order);
         }
 
-        $oldStatus = $order->status->value;
+        $oldStatus = $order->status;
+        
+        // If order was COMPLETED and now changing to something else (cancellation/return)
+        // We need to return physical quantity back
+        if ($oldStatus === OrderStatus::COMPLETED && in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+            foreach ($order->items as $item) {
+                $item->product->increment('quantity', $item->quantity);
+            }
+        }
+
+        // If order is being CANCELLED or RETURNED from a non-cancelled state
+        // We always release reserved available_quantity
+        if (in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED]) &&
+            !in_array($oldStatus, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+            foreach ($order->items as $item) {
+                $item->product->increment('available_quantity', $item->quantity);
+            }
+        }
+
+        $oldStatusValue = $oldStatus->value;
 
         $order->update([
             'status' => $status,
