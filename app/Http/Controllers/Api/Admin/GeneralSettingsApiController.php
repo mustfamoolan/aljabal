@@ -12,6 +12,13 @@ use Illuminate\Http\Request;
 
 class GeneralSettingsApiController extends Controller
 {
+    protected \App\Services\GatewayIntegrationService $gatewayService;
+
+    public function __construct(\App\Services\GatewayIntegrationService $gatewayService)
+    {
+        $this->gatewayService = $gatewayService;
+    }
+
     /**
      * Get all general settings for the mobile app dashboard.
      */
@@ -22,6 +29,7 @@ class GeneralSettingsApiController extends Controller
         $orderCommissionSetting = OrderPreparationCommissionSetting::active()->first() ?? OrderPreparationCommissionSetting::first();
         $gifts = GiftSetting::gifts()->active()->get();
         $giftBoxes = GiftSetting::giftBoxes()->active()->get();
+        $gatewaySetting = \App\Models\GatewaySetting::first();
 
         return response()->json([
             'withdrawal' => $withdrawalSetting,
@@ -29,6 +37,12 @@ class GeneralSettingsApiController extends Controller
             'order_commission' => $orderCommissionSetting,
             'gifts' => $gifts,
             'gift_boxes' => $giftBoxes,
+            'gateway' => $gatewaySetting ? [
+                'waseet_username' => $gatewaySetting->waseet_username,
+                'is_connected' => $gatewaySetting->is_connected,
+                'last_sync_at' => $gatewaySetting->last_sync_at ? $gatewaySetting->last_sync_at->toDateTimeString() : null,
+                'project_name' => $gatewaySetting->project_name,
+            ] : null,
         ]);
     }
 
@@ -155,5 +169,41 @@ class GeneralSettingsApiController extends Controller
         return response()->json([
             'message' => 'تم حذف إعداد الهدية بنجاح.'
         ]);
+    }
+
+    /**
+     * Connect to Waseet Gateway from API.
+     */
+    public function connectGateway(Request $request): JsonResponse
+    {
+        $request->validate([
+            'waseet_username' => 'required|string',
+            'waseet_password' => 'required|string',
+        ]);
+
+        $result = $this->gatewayService->connect(
+            $request->waseet_username,
+            $request->waseet_password
+        );
+
+        if ($result['success']) {
+            return response()->json($result);
+        }
+
+        return response()->json($result, 422);
+    }
+
+    /**
+     * Trigger location sync from API.
+     */
+    public function syncGatewayLocations(): JsonResponse
+    {
+        $result = $this->gatewayService->syncLocations();
+
+        if ($result['success']) {
+            return response()->json($result);
+        }
+
+        return response()->json($result, 422);
     }
 }

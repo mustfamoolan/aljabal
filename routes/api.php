@@ -74,6 +74,8 @@ Route::prefix('admin')->group(function () {
             // General Settings
             Route::get('/general', [\App\Http\Controllers\Api\Admin\GeneralSettingsApiController::class, 'index']);
             Route::put('/general', [\App\Http\Controllers\Api\Admin\GeneralSettingsApiController::class, 'update']);
+            Route::post('/general/gateway/connect', [\App\Http\Controllers\Api\Admin\GeneralSettingsApiController::class, 'connectGateway']);
+            Route::post('/general/gateway/sync', [\App\Http\Controllers\Api\Admin\GeneralSettingsApiController::class, 'syncGatewayLocations']);
 
             // Gifts Management (General)
             Route::post('/general/gifts', [\App\Http\Controllers\Api\Admin\GeneralSettingsApiController::class, 'storeGift']);
