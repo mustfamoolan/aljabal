@@ -13,7 +13,8 @@ use Illuminate\View\View;
 class OrderController extends Controller
 {
     public function __construct(
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected \App\Services\GatewayIntegrationService $gatewayService
     ) {
     }
 
@@ -26,7 +27,7 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $query = Order::with('orderItems.product', 'representative', 'createdBy')
+        $query = Order::with('orderItems.product', 'representative', 'createdBy', 'governorate', 'district')
             ->latest();
 
         // Filters
@@ -61,9 +62,35 @@ class OrderController extends Controller
             abort(403);
         }
 
-        $order->load('orderItems.product', 'representative', 'createdBy');
+        $order->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district']);
 
         return view('admin.orders.show', compact('order'));
+    }
+
+    /**
+     * Send Order to Al-Waseet and update status to prepared.
+     */
+    public function sendToWaseet(Order $order): RedirectResponse
+    {
+        if (!auth()->user()->isAdmin()) {
+            abort(403);
+        }
+
+        try {
+            $result = $this->gatewayService->sendToWaseet($order);
+
+            if ($result['success'] ?? false) {
+                // Automate Status Change to Prepared
+                $this->orderService->changeOrderStatus($order, OrderStatus::prepared, auth()->user());
+
+                return redirect()->route('admin.orders.show', $order)
+                    ->with('success', 'تم تجهيز الطلب وإرساله للوسيط بنجاح!');
+            }
+
+            return back()->withErrors(['error' => $result['message'] ?? 'فشل إرسال الطلب للوسيط.']);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'حدث خطأ أثناء الاتصال بالبوابة: ' . $e->getMessage()]);
+        }
     }
 
     /**

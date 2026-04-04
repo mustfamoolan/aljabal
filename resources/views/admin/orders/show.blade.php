@@ -41,7 +41,9 @@
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>الاسم:</strong> {{ $order->customer_name }}</p>
-                        <p><strong>العنوان:</strong> {{ $order->customer_address }}</p>
+                        <p><strong>المحافظة:</strong> {{ $order->governorate->name ?? 'غير محدد' }}</p>
+                        <p><strong>المنطقة:</strong> {{ $order->district->name ?? 'غير محدد' }}</p>
+                        <p><strong>العنوان التفصيلي:</strong> {{ $order->customer_address }}</p>
                         <p><strong>رقم الهاتف:</strong> {{ $order->customer_phone }}</p>
                     </div>
                     <div class="col-md-6">
@@ -137,27 +139,33 @@
     </div>
     <div class="col-md-6">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">معلومات الطلب</h5>
+            <div class="card-header bg-primary-subtle">
+                <h5 class="card-title mb-0">معلومات التتبع (الوسيط)</h5>
             </div>
             <div class="card-body">
-                <p><strong>الحالة:</strong> 
-                    <span class="badge {{ $order->status->badgeClass() }}">
-                        {{ $order->status->label() }}
-                    </span>
-                </p>
-                <p><strong>المندوب:</strong> 
-                    @if($order->representative)
-                        {{ $order->representative->name }}
-                    @elseif($order->createdBy)
-                        {{ $order->createdBy->name }}
-                    @else
-                        -
+                @if($order->waseet_order_id)
+                    <p><strong>رقم التتبع:</strong> <span class="badge bg-dark">{{ $order->waseet_order_id }}</span></p>
+                    <p><strong>الحالة في الوسيط:</strong> <span class="badge bg-info">{{ $order->waseet_status ?? 'قيد المعالجة' }}</span></p>
+                    @if($order->waseet_tracking_url)
+                        <a href="{{ $order->waseet_tracking_url }}" target="_blank" class="btn btn-success w-100 mt-2">
+                            <iconify-icon icon="solar:printer-bold-duotone" class="me-1"></iconify-icon>
+                            طباعة استيكر الوسيط (PDF)
+                        </a>
                     @endif
-                </p>
-                <p><strong>تاريخ الإنشاء:</strong> {{ $order->created_at->format('Y-m-d H:i') }}</p>
-                @if($order->completed_at)
-                    <p><strong>تاريخ الإكمال:</strong> {{ $order->completed_at->format('Y-m-d H:i') }}</p>
+                @else
+                    <div class="text-center py-3">
+                        <iconify-icon icon="solar:delivery-bold-duotone" class="fs-40 text-muted mb-2"></iconify-icon>
+                        <p class="text-muted">لم يتم إرسال هذا الطلب لشركة الوسيط بعد.</p>
+                        @if($order->status === \App\Enums\OrderStatus::NEW)
+                            <form action="{{ route('admin.orders.send-to-waseet', $order) }}" method="POST">
+                                @csrf
+                                <button type="submit" class="btn btn-primary">
+                                    <iconify-icon icon="solar:rocket-bold-duotone" class="me-1"></iconify-icon>
+                                    تجهيز وإرسال للوسيط الآن
+                                </button>
+                            </form>
+                        @endif
+                    </div>
                 @endif
             </div>
         </div>
