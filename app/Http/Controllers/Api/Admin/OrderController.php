@@ -13,7 +13,8 @@ use Illuminate\Http\Request;
 class OrderController extends Controller
 {
     public function __construct(
-        protected OrderService $orderService
+        protected OrderService $orderService,
+        protected \App\Services\GatewayIntegrationService $gatewayService
     ) {
     }
 
@@ -95,6 +96,36 @@ class OrderController extends Controller
             return response()->json([
                 'message' => $e->getMessage(),
             ], 422);
+        }
+    }
+    /**
+     * Send order to AlWaseet Gateway.
+     */
+    public function sendToWaseet(Order $order): JsonResponse
+    {
+        try {
+            $result = $this->gatewayService->sendToWaseet($order);
+
+            if ($result['success'] ?? false) {
+                // Automate Status Change to Prepared
+                $this->orderService->changeOrderStatus($order, OrderStatus::prepared, auth()->user());
+
+                return response()->json([
+                    'status' => true,
+                    'message' => 'تم تجهيز الطلب وإرساله للوسيط بنجاح!',
+                    'data' => new OrderResource($order->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district'])),
+                ]);
+            }
+
+            return response()->json([
+                'status' => false,
+                'message' => $result['message'] ?? 'فشل إرسال الطلب للوسيط.',
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ أثناء الاتصال بالبوابة: ' . $e->getMessage(),
+            ], 500);
         }
     }
 }

@@ -181,4 +181,125 @@ class GatewayIntegrationService
             return ['success' => false, 'message' => 'حدث خطأ أثناء المزامنة: ' . $errorMsg];
         }
     }
+    /**
+     * AlWaseet API V2.3 Integration
+     */
+    protected string $waseetBaseUrl = 'https://api.alwaseet-iq.net';
+
+    /**
+     * Login to Waseet and get token
+     */
+    public function loginToWaseet(): ?string
+    {
+        $setting = GatewaySetting::first();
+        if (!$setting || !$setting->waseet_username || !$setting->waseet_password) {
+            return null;
+        }
+
+        // Cache token for 24 hours
+        return \Illuminate\Support\Facades\Cache::remember('waseet_token', 86400, function () use ($setting) {
+            try {
+                $response = Http::asMultipart()->post("{$this->waseetBaseUrl}/v1/merchant/login", [
+                    'username' => $setting->waseet_username,
+                    'password' => $setting->waseet_password,
+                ]);
+
+                $data = $response->json();
+                if ($response->successful() && ($data['status'] ?? false) === true) {
+                    return $data['data']['token'];
+                }
+            } catch (\Exception $e) {
+                Log::error("Waseet Login Error: " . $e->getMessage());
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Send Order to Waseet via Gateway Bridge (SalesFlowi)
+     */
+    public function sendToWaseet(\App\Models\Order $order): array
+    {
+        $setting = GatewaySetting::first();
+        if (!$setting || !$setting->is_connected || !$setting->api_key) {
+            return ['success' => false, 'message' => 'يجب الاتصال ببوابة الوسيط أولاً من الإعدادات.'];
+        }
+
+        try {
+            $order->load(['governorate', 'district', 'orderItems']);
+            
+            $payload = [
+                'client_name' => $order->customer_name,
+                'client_mobile' => $this->formatIraqiPhone($order->customer_phone),
+                'city_id' => $order->governorate_id,
+                'region_id' => $order->district_id,
+                'location' => $order->customer_address,
+                'type_name' => 'منتجات هدايا',
+                'items_number' => $order->orderItems->sum('quantity'),
+                'price' => (int) $order->total_amount,
+                'package_size' => 1, // Default size
+                'merchant_notes' => $order->customer_notes ?? '',
+            ];
+
+            if ($order->customer_phone_2) {
+                $payload['client_mobile2'] = $this->formatIraqiPhone($order->customer_phone_2);
+            }
+
+            // Call the SalesFlowi Gateway Bridge
+            $url = rtrim($this->defaultGatewayUrl, '/') . '/api/gateway/create-order';
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Project' => $setting->project_name,
+                    'X-API-KEY' => $setting->api_key,
+                ])
+                ->asMultipart()
+                ->post($url, $payload);
+
+            $data = $response->json();
+
+            if ($response->successful() && ($data['status'] ?? false) === true) {
+                // Success from Al-Waseet via Gateway
+                $order->update([
+                    'waseet_order_id' => $data['data']['qr_id'] ?? $data['data']['order_id'],
+                    'waseet_tracking_url' => $data['data']['qr_link'] ?? $data['data']['tracking_url'],
+                    'waseet_status' => 'قيد المعالجة',
+                ]);
+
+                return ['success' => true, 'message' => 'تم إرسال الطلب وحجز رقم تتبع بنجاح!'];
+            }
+
+            return ['success' => false, 'message' => $data['msg'] ?? $data['message'] ?? 'فشل إرسال الطلب للوسيط.'];
+
+        } catch (\Exception $e) {
+            Log::error("Waseet Gateway Send Error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'خطأ في الاتصال بالبوابة: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Format Iraqi phone number to +964...
+     */
+    protected function formatIraqiPhone(string $phone): string
+    {
+        // Remove spaces and non-digits
+        $phone = preg_replace('/\D/', '', $phone);
+        
+        // If it starts with 07, replace 0 with +964
+        if (str_starts_with($phone, '07')) {
+            return '+964' . substr($phone, 1);
+        }
+        
+        // If it starts with 7 and has 10 digits, prepend +964
+        if (str_starts_with($phone, '7') && strlen($phone) === 10) {
+            return '+964' . $phone;
+        }
+
+        // Already has 964?
+        if (str_starts_with($phone, '964')) {
+            return '+' . $phone;
+        }
+
+        return '+' . $phone;
+    }
 }
+

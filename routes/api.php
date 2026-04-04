@@ -136,6 +136,7 @@ Route::prefix('admin')->group(function () {
         // Orders routes
         Route::apiResource('orders', \App\Http\Controllers\Api\Admin\OrderController::class)->only(['index', 'show']);
         Route::post('orders/{order}/status', [\App\Http\Controllers\Api\Admin\OrderController::class, 'updateStatus']);
+        Route::post('orders/{order}/send-to-waseet', [\App\Http\Controllers\Api\Admin\OrderController::class, 'sendToWaseet']);
 
         // Withdrawal Requests
         Route::prefix('withdrawals')->group(function () {
