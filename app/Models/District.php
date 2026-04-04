@@ -14,6 +14,7 @@ class District extends Model
     protected $fillable = [
         'governorate_id',
         'name',
+        'delivery_fee',
         'is_active',
     ];
 

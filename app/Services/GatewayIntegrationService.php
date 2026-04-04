@@ -117,7 +117,6 @@ class GatewayIntegrationService
             $syncedGovCount = count($govsInsert);
 
             // Fetch Regions Concurrently for ALL cities to avoid timeouts
-            // Waseet Rate limit is 30/30s, making ~18 requests concurrently is perfectly safe!
             $headers = [
                 'Project' => $setting->project_name,
                 'X-API-KEY' => $setting->api_key,
@@ -143,10 +142,10 @@ class GatewayIntegrationService
                     foreach ($regionsData as $region) {
                         $distsInsert[] = [
                             'id' => $region['id'],
-                            'governorate_id' => $cityId,
+                            'governorate_id' => (int) $cityId,
                             'name' => $region['region_name'] ?? $region['name'] ?? 'Unknown',
+                            'delivery_fee' => 0.00,
                             'is_active' => true,
-                            'delivery_fee' => 0,
                             'created_at' => now(),
                             'updated_at' => now()
                         ];
@@ -154,15 +153,17 @@ class GatewayIntegrationService
                 }
             }
 
-            // Insert in chunks of 500 to prevent MySQL "packet too large" errors
-            $chunks = array_chunk($distsInsert, 500);
-            foreach ($chunks as $chunk) {
-                \App\Models\District::upsert(
-                    $chunk, 
-                    ['id'], 
-                    ['governorate_id', 'name', 'is_active', 'delivery_fee', 'updated_at']
-                );
-                $syncedDistCount += count($chunk);
+            // Insert in chunks to prevent MySQL "packet too large" errors
+            if (!empty($distsInsert)) {
+                $chunks = array_chunk($distsInsert, 250); // Smaller chunks for safer upsert
+                foreach ($chunks as $chunk) {
+                    \App\Models\District::upsert(
+                        $chunk, 
+                        ['id'], 
+                        ['governorate_id', 'name', 'delivery_fee', 'is_active', 'updated_at']
+                    );
+                    $syncedDistCount += count($chunk);
+                }
             }
 
             // Update Sync timestamp
