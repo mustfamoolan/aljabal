@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WithdrawalRequestController;
 use App\Http\Controllers\Admin\WithdrawalSettingsController;
+use App\Http\Controllers\Admin\GatewaySettingsController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\ProductController;
@@ -150,6 +151,11 @@ Route::group(['prefix' => '/', 'middleware' => ['auth', 'admin']], function () {
 
     // Withdrawal Settings routes
     Route::get('admin/settings/withdrawal', [WithdrawalSettingsController::class, 'index'])->name('admin.settings.withdrawal.index');
+
+    // Gateway (Al-Waseet) Settings routes
+    Route::get('admin/settings/gateway', [GatewaySettingsController::class, 'index'])->name('admin.settings.gateway.index');
+    Route::post('admin/settings/gateway', [GatewaySettingsController::class, 'store'])->name('admin.settings.gateway.store');
+    Route::post('admin/settings/gateway/sync', [GatewaySettingsController::class, 'sync'])->name('admin.settings.gateway.sync');
 
     // General Settings routes are handled in routes/admin.php
 

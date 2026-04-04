@@ -101,6 +101,15 @@
                         <span class="nav-text"> الإعدادات </span>
                     </a>
                 </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('admin.settings.gateway.index') }}">
+                        <span class="nav-icon">
+                            <iconify-icon icon="solar:round-transfer-horizontal-bold-duotone"></iconify-icon>
+                        </span>
+                        <span class="nav-text"> ربط الوسيط (Gateway) </span>
+                    </a>
+                </li>
             @endif
 
             @if(auth()->user()->isAdmin() || auth()->user()->can('notifications.view'))
