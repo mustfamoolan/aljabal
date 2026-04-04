@@ -44,6 +44,9 @@ class OrderResource extends JsonResource
             'gift_name' => $this->gift?->name,
             'gift_box_name' => $this->giftBox?->name,
             'order_items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
+            'waseet_order_id' => $this->waseet_order_id,
+            'waseet_tracking_url' => $this->waseet_tracking_url,
+            'waseet_status' => $this->waseet_status,
             'created_at' => $this->created_at?->toDateTimeString(),
             'completed_at' => $this->completed_at?->toDateTimeString(),
         ];

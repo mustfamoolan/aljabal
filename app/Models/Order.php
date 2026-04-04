@@ -34,6 +34,9 @@ class Order extends Model
         'gift_box_id',
         'gift_price',
         'is_withdrawal_order',
+        'waseet_order_id',
+        'waseet_tracking_url',
+        'waseet_status',
     ];
 
     protected function casts(): array
