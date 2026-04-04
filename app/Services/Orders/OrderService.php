@@ -130,6 +130,10 @@ class OrderService
             $subtotal = $quantity * $customerPrice;
             $profitSubtotal = $quantity * $profitPerItem;
 
+            if ($product->available_quantity < $quantity) {
+                throw new \Exception("الكمية المطلوبة ({$quantity}) غير متوفرة لهذا المنتج ({$product->name}). المتوفر حالياً: {$product->available_quantity}");
+            }
+
             $orderItem = OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $product->id,
@@ -159,6 +163,10 @@ class OrderService
             $profitPerItem = max(0, $customerPrice - $wholesalePrice);
             $subtotal = $quantity * $customerPrice;
             $profitSubtotal = $quantity * $profitPerItem;
+
+            if ($product->available_quantity + $orderItem->quantity < $quantity) {
+                throw new \Exception("الكمية المطلوبة ({$quantity}) غير متوفرة لهذا المنتج ({$product->name}). المتوفر حالياً: " . ($product->available_quantity + $orderItem->quantity));
+            }
 
             $orderItem->update([
                 'quantity' => $quantity,
