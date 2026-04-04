@@ -36,5 +36,15 @@ else
     echo "✗ Warning: Storage link may not be working correctly"
 fi
 
-echo "Deployment completed!"
+# Run essential Laravel deployment commands
+echo "Optimizing Autoloader..."
+composer dump-autoload --optimize
+
+echo "Running Database Migrations..."
+php artisan migrate --force
+
+echo "Clearing Cache..."
+php artisan optimize:clear
+
+echo "Deployment completed successfully! 🚀"
 
