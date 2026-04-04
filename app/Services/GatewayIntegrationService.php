@@ -175,8 +175,10 @@ class GatewayIntegrationService
             ];
 
         } catch (\Exception $e) {
-            Log::error("Gateway Sync Error: " . $e->getMessage());
-            return ['success' => false, 'message' => 'حدث خطأ أثناء المزامنة: ' . $e->getMessage()];
+            \Illuminate\Support\Facades\Log::error("Gateway Sync Error: " . $e->getMessage());
+            // Truncate message to avoid UI overflows in mobile apps
+            $errorMsg = \Illuminate\Support\Str::limit($e->getMessage(), 150);
+            return ['success' => false, 'message' => 'حدث خطأ أثناء المزامنة: ' . $errorMsg];
         }
     }
 }
