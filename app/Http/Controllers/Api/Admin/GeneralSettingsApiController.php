@@ -186,11 +186,7 @@ class GeneralSettingsApiController extends Controller
             $request->waseet_password
         );
 
-        if ($result['success']) {
-            return response()->json($result);
-        }
-
-        return response()->json($result, 422);
+        return response()->json($result);
     }
 
     /**
@@ -200,10 +196,6 @@ class GeneralSettingsApiController extends Controller
     {
         $result = $this->gatewayService->syncLocations();
 
-        if ($result['success']) {
-            return response()->json($result);
-        }
-
-        return response()->json($result, 422);
+        return response()->json($result);
     }
 }
