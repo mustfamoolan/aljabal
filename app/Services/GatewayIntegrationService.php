@@ -99,46 +99,70 @@ class GatewayIntegrationService
                 return ['success' => false, 'message' => 'قائمة المحافظات من الوسيط فارغة.'];
             }
 
-            // Start Syncing Governorates
-            $syncedGovCount = 0;
-            $syncedDistCount = 0;
-
+            // Fast Upsert Governorates
+            $govsInsert = [];
             foreach ($citiesData as $city) {
-                // Determine the ID strategy
-                // Since user chose Option 2 (Sync), we will map Waseet's City ID to Governorate.
-                // We will use updateOrCreate to retain existing matching IDs or create new ones.
-                $govId = $city['id']; // Expecting Waseet's ID
-                $govName = $city['city_name'] ?? $city['name'] ?? 'Unknown';
-                
-                $governorate = \App\Models\Governorate::updateOrCreate(
-                    ['id' => $govId],
-                    ['name' => $govName, 'is_active' => true]
-                );
-                $syncedGovCount++;
+                if (empty($city['id'])) continue;
+                $govsInsert[] = [
+                    'id' => $city['id'],
+                    'name' => $city['city_name'] ?? $city['name'] ?? 'Unknown',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+            if (!empty($govsInsert)) {
+                \App\Models\Governorate::upsert($govsInsert, ['id'], ['name', 'is_active', 'updated_at']);
+            }
+            $syncedGovCount = count($govsInsert);
 
-                // 2. Fetch Districts (Regions in Waseet) for this City
-                $regionsResponse = Http::timeout(10)->withHeaders([
-                    'Project' => $setting->project_name,
-                    'X-API-KEY' => $setting->api_key,
-                ])->get("{$url}/api/gateway/regions", [
-                    'city_id' => $govId
-                ]);
+            // Fetch Regions Concurrently for ALL cities to avoid timeouts
+            // Waseet Rate limit is 30/30s, making ~18 requests concurrently is perfectly safe!
+            $headers = [
+                'Project' => $setting->project_name,
+                'X-API-KEY' => $setting->api_key,
+            ];
 
-                if ($regionsResponse->successful()) {
-                    $regionsData = $regionsResponse->json()['data'] ?? [];
+            $responses = Http::pool(function (\Illuminate\Http\Client\Pool $pool) use ($citiesData, $headers, $url) {
+                return collect($citiesData)->filter(fn($c) => !empty($c['id']))->map(function ($city) use ($pool, $headers, $url) {
+                    return $pool->as('city_' . $city['id'])
+                        ->timeout(30)
+                        ->withHeaders($headers)
+                        ->get("{$url}/api/gateway/regions", ['city_id' => $city['id']]);
+                });
+            });
+
+            // Gather and format all districts for Fast Upsert
+            $distsInsert = [];
+            $syncedDistCount = 0;
+            foreach ($responses as $key => $response) {
+                if ($response instanceof \Illuminate\Http\Client\Response && $response->successful()) {
+                    $regionsData = $response->json()['data'] ?? [];
+                    $cityId = str_replace('city_', '', $key);
+                    
                     foreach ($regionsData as $region) {
-                        \App\Models\District::updateOrCreate(
-                            ['id' => $region['id']], // Use Waseet's Region ID
-                            [
-                                'governorate_id' => $govId,
-                                'name' => $region['region_name'] ?? $region['name'] ?? 'Unknown',
-                                'is_active' => true,
-                                'delivery_fee' => 0 // Default to zero or extract if available
-                            ]
-                        );
-                        $syncedDistCount++;
+                        $distsInsert[] = [
+                            'id' => $region['id'],
+                            'governorate_id' => $cityId,
+                            'name' => $region['region_name'] ?? $region['name'] ?? 'Unknown',
+                            'is_active' => true,
+                            'delivery_fee' => 0,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ];
                     }
                 }
+            }
+
+            // Insert in chunks of 500 to prevent MySQL "packet too large" errors
+            $chunks = array_chunk($distsInsert, 500);
+            foreach ($chunks as $chunk) {
+                \App\Models\District::upsert(
+                    $chunk, 
+                    ['id'], 
+                    ['governorate_id', 'name', 'is_active', 'delivery_fee', 'updated_at']
+                );
+                $syncedDistCount += count($chunk);
             }
 
             // Update Sync timestamp
@@ -147,7 +171,7 @@ class GatewayIntegrationService
 
             return [
                 'success' => true, 
-                'message' => "تمت المزامنة بنجاح! ($syncedGovCount محافظة و $syncedDistCount منقطة)"
+                'message' => "تمت المزامنة البطلة بنجاح! ($syncedGovCount محافظة و $syncedDistCount منقطة في ثوانٍ)"
             ];
 
         } catch (\Exception $e) {
