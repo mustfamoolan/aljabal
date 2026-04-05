@@ -69,9 +69,15 @@ class OrderController extends Controller
     public function show(Order $order): JsonResponse
     {
         $order->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district', 'gift', 'giftBox']);
+        
+        $waseetDetails = [];
+        if ($order->waseet_order_id) {
+            $waseetDetails = $this->gatewayService->getWaseetOrderDetails($order->waseet_order_id);
+        }
 
         return response()->json([
             'data' => new OrderResource($order),
+            'waseet_details' => $waseetDetails,
         ]);
     }
 
@@ -108,7 +114,7 @@ class OrderController extends Controller
 
             if ($result['success'] ?? false) {
                 // Automate Status Change to Prepared
-                $this->orderService->changeOrderStatus($order, OrderStatus::prepared, auth()->user());
+                $this->orderService->changeOrderStatus($order, OrderStatus::PREPARED, auth()->user());
 
                 return response()->json([
                     'status' => true,
@@ -127,5 +133,17 @@ class OrderController extends Controller
                 'message' => 'حدث خطأ أثناء الاتصال بالبوابة: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Get dynamic statuses list from Al-Waseet via Gateway.
+     */
+    public function waseetStatuses(): JsonResponse
+    {
+        $statuses = $this->gatewayService->getWaseetStatuses();
+        return response()->json([
+            'status' => true,
+            'data' => $statuses,
+        ]);
     }
 }

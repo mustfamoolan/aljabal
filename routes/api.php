@@ -134,6 +134,7 @@ Route::prefix('admin')->group(function () {
         Route::apiResource('representatives', RepresentativeController::class);
 
         // Orders routes
+        Route::get('orders/statuses', [\App\Http\Controllers\Api\Admin\OrderController::class, 'waseetStatuses']);
         Route::apiResource('orders', \App\Http\Controllers\Api\Admin\OrderController::class)->only(['index', 'show']);
         Route::post('orders/{order}/status', [\App\Http\Controllers\Api\Admin\OrderController::class, 'updateStatus']);
         Route::post('orders/{order}/send-to-waseet', [\App\Http\Controllers\Api\Admin\OrderController::class, 'sendToWaseet']);

@@ -174,7 +174,7 @@
 
 <!-- Change Status -->
 @if($order->status !== \App\Enums\OrderStatus::COMPLETED)
-    <div class="row">
+    <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
@@ -198,6 +198,47 @@
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
+<!-- Waseet Status Timeline -->
+@if(!empty($waseetDetails) && isset($waseetDetails['logs']))
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">سجل تتبع الشحنة (من الوسيط)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline-vertical">
+                        @foreach($waseetDetails['logs'] as $log)
+                            <div class="timeline-item d-flex mb-4">
+                                <div class="timeline-icon me-3">
+                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <iconify-icon icon="solar:check-circle-bold" class="text-white"></iconify-icon>
+                                    </div>
+                                    @if(!$loop->last)
+                                        <div class="timeline-line mx-auto bg-light" style="width: 2px; height: 100%; min-height: 30px;"></div>
+                                    @endif
+                                </div>
+                                <div class="timeline-content">
+                                    <h6 class="mb-1 fw-bold text-primary">{{ $log['status_name'] ?? $log['msg'] ?? 'تحديث الحالة' }}</h6>
+                                    <p class="mb-0 text-muted small">
+                                        <iconify-icon icon="solar:calendar-bold-duotone" class="me-1"></iconify-icon>
+                                        {{ $log['created_at'] ?? 'التاريخ غير متوفر' }}
+                                    </p>
+                                    @if(isset($log['note']))
+                                        <p class="mt-1 mb-0 border-start ps-2 border-primary-subtle text-dark-emphasis fst-italic">
+                                            {{ $log['note'] }}
+                                        </p>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             </div>
         </div>

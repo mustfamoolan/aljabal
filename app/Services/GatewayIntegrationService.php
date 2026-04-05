@@ -309,5 +309,55 @@ class GatewayIntegrationService
 
         return '+' . $phone;
     }
+
+    /**
+     * Get dynamic statuses from Al-Waseet via Gateway.
+     */
+    public function getWaseetStatuses(): array
+    {
+        $setting = GatewaySetting::first();
+        if (!$setting || !$setting->is_connected) return [];
+
+        return \Illuminate\Support\Facades\Cache::remember('waseet_statuses_list', 86400, function () use ($setting) {
+            try {
+                $response = Http::withHeaders([
+                    'Project' => $setting->project_name,
+                    'X-API-KEY' => $setting->api_key,
+                ])->get(rtrim($this->defaultGatewayUrl, '/') . '/api/gateway/statuses');
+
+                if ($response->successful()) {
+                    return $response->json()['data'] ?? [];
+                }
+            } catch (\Exception $e) {
+                Log::error("Failed to fetch Waseet statuses: " . $e->getMessage());
+            }
+            return [];
+        });
+    }
+
+    /**
+     * Fetch full order details including history from Al-Waseet via Gateway.
+     */
+    public function getWaseetOrderDetails(string $waseetOrderId): array
+    {
+        $setting = GatewaySetting::first();
+        if (!$setting || !$setting->is_connected) return [];
+
+        try {
+            $response = Http::withHeaders([
+                'Project' => $setting->project_name,
+                'X-API-KEY' => $setting->api_key,
+            ])->get(rtrim($this->defaultGatewayUrl, '/') . "/api/gateway/order-status/{$waseetOrderId}");
+
+            if ($response->successful()) {
+                $data = $response->json();
+                // Usually returns an array since it's a bulk/ids lookup
+                return $data['data'][0] ?? $data['data'] ?? [];
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to fetch Waseet order details: " . $e->getMessage());
+        }
+        return [];
+    }
 }
 

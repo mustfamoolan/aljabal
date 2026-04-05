@@ -32,11 +32,22 @@
                     <div class="col-md-3">
                         <select name="status" class="form-select">
                             <option value="">جميع الحالات</option>
-                            @foreach(\App\Enums\OrderStatus::cases() as $status)
-                                <option value="{{ $status->value }}" {{ request('status') == $status->value ? 'selected' : '' }}>
-                                    {{ $status->label() }}
-                                </option>
-                            @endforeach
+                            <optgroup label="حالات النظام">
+                                @foreach(\App\Enums\OrderStatus::cases() as $status)
+                                    <option value="{{ $status->value }}" {{ request('status') == $status->value ? 'selected' : '' }}>
+                                        {{ $status->label() }}
+                                    </option>
+                                @endforeach
+                            </optgroup>
+                            @if(!empty($waseetStatuses))
+                                <optgroup label="حالات الوسيط">
+                                    @foreach($waseetStatuses as $wStatus)
+                                        <option value="{{ $wStatus['status_name'] ?? $wStatus }}" {{ request('status') == ($wStatus['status_name'] ?? $wStatus) ? 'selected' : '' }}>
+                                            {{ $wStatus['status_name'] ?? $wStatus }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @endif
                         </select>
                     </div>
                     <div class="col-md-3">

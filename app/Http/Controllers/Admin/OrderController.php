@@ -49,8 +49,9 @@ class OrderController extends Controller
         }
 
         $orders = $query->paginate(15);
+        $waseetStatuses = $this->gatewayService->getWaseetStatuses();
 
-        return view('admin.orders.index', compact('orders'));
+        return view('admin.orders.index', compact('orders', 'waseetStatuses'));
     }
 
     /**
@@ -63,8 +64,13 @@ class OrderController extends Controller
         }
 
         $order->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district']);
+        
+        $waseetDetails = [];
+        if ($order->waseet_order_id) {
+            $waseetDetails = $this->gatewayService->getWaseetOrderDetails($order->waseet_order_id);
+        }
 
-        return view('admin.orders.show', compact('order'));
+        return view('admin.orders.show', compact('order', 'waseetDetails'));
     }
 
     /**
