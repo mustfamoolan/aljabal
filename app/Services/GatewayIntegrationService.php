@@ -227,7 +227,14 @@ class GatewayIntegrationService
         }
 
         try {
-            $order->load(['governorate', 'district', 'orderItems']);
+            $order->load(['governorate', 'district', 'orderItems.product']);
+
+            // Generate content description from product names
+            $productNames = $order->orderItems->map(function($item) {
+                return $item->product ? $item->product->name : 'منتج غير معروف';
+            })->unique()->join('، ');
+
+            $typeName = \Illuminate\Support\Str::limit($productNames, 90, '...');
             
             $payload = [
                 'client_name' => $order->customer_name,
@@ -235,7 +242,7 @@ class GatewayIntegrationService
                 'city_id' => $order->governorate_id,
                 'region_id' => $order->district_id,
                 'location' => $order->customer_address,
-                'type_name' => 'منتجات هدايا',
+                'type_name' => $typeName ?: 'منتجات منوعة',
                 'items_number' => $order->orderItems->sum('quantity'),
                 'price' => (int) $order->total_amount,
                 'package_size' => 1, // Default size
