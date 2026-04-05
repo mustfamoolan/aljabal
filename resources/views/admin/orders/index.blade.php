@@ -100,10 +100,26 @@
                                     </td>
                                     <td>{{ $order->created_at->format('Y-m-d H:i') }}</td>
                                     <td>
-                                        <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-sm btn-primary">
-                                            <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
-                                            عرض
-                                        </a>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ route('admin.orders.show', $order) }}" class="btn btn-sm btn-soft-primary" title="عرض التفاصيل">
+                                                <iconify-icon icon="solar:eye-bold-duotone"></iconify-icon>
+                                            </a>
+
+                                            @if($order->status === \App\Enums\OrderStatus::NEW)
+                                                <form action="{{ route('admin.orders.send-to-waseet', $order) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-soft-warning" title="تجهيز وإرسال للوسيط">
+                                                        <iconify-icon icon="solar:delivery-bold-duotone"></iconify-icon>
+                                                    </button>
+                                                </form>
+                                            @endif
+
+                                            @if($order->waseet_order_id)
+                                                <a href="{{ $order->waseet_tracking_url }}" target="_blank" class="btn btn-sm btn-soft-success" title="طباعة وصل الوسيط">
+                                                    <iconify-icon icon="solar:printer-bold-duotone"></iconify-icon>
+                                                </a>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
