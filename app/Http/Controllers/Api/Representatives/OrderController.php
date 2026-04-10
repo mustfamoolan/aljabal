@@ -91,14 +91,14 @@ class OrderController extends Controller
 
         $order->load(['orderItems.product', 'governorate', 'district', 'gift', 'giftBox']);
 
-        // Fetch movements from Gateway if connected
+        // Fetch movements (logs) from Gateway if connected
         $movements = [];
         if ($order->waseet_order_id) {
             try {
                 $gatewayService = app(\App\Services\GatewayIntegrationService::class);
                 $waseetDetails = $gatewayService->getWaseetOrderDetails($order->waseet_order_id);
-                // Based on common structures, we look for movements or tracking
-                $movements = $waseetDetails['movements'] ?? $waseetDetails['tracking'] ?? [];
+                // Al-Waseet uses 'logs' for tracking history
+                $movements = $waseetDetails['logs'] ?? $waseetDetails['movements'] ?? $waseetDetails['tracking'] ?? [];
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error("Failed to fetch movements for order {$order->id}: " . $e->getMessage());
             }
