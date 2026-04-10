@@ -91,8 +91,22 @@ class OrderController extends Controller
 
         $order->load(['orderItems.product', 'governorate', 'district', 'gift', 'giftBox']);
 
+        // Fetch movements from Gateway if connected
+        $movements = [];
+        if ($order->waseet_order_id) {
+            try {
+                $gatewayService = app(\App\Services\GatewayIntegrationService::class);
+                $waseetDetails = $gatewayService->getWaseetOrderDetails($order->waseet_order_id);
+                // Based on common structures, we look for movements or tracking
+                $movements = $waseetDetails['movements'] ?? $waseetDetails['tracking'] ?? [];
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to fetch movements for order {$order->id}: " . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'data' => new OrderResource($order),
+            'order_movements' => $movements,
         ]);
     }
 
