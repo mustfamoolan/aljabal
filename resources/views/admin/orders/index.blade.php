@@ -42,8 +42,11 @@
                             @if(!empty($waseetStatuses))
                                 <optgroup label="حالات الوسيط">
                                     @foreach($waseetStatuses as $wStatus)
-                                        <option value="{{ $wStatus['status_name'] ?? $wStatus }}" {{ request('status') == ($wStatus['status_name'] ?? $wStatus) ? 'selected' : '' }}>
-                                            {{ $wStatus['status_name'] ?? $wStatus }}
+                                        @php
+                                            $finalStatus = is_array($wStatus) ? ($wStatus['status_name'] ?? $wStatus['name'] ?? 'Unknown') : $wStatus;
+                                        @endphp
+                                        <option value="{{ $finalStatus }}" {{ request('status') == $finalStatus ? 'selected' : '' }}>
+                                            {{ $finalStatus }}
                                         </option>
                                     @endforeach
                                 </optgroup>
