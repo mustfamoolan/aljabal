@@ -10,149 +10,80 @@ use App\Models\OrderItem;
 use App\Models\Expense;
 use App\Models\Representative;
 use App\Models\WithdrawalRequest;
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ReportApiController extends Controller
 {
     public function index(Request $request)
     {
-        $period      = $request->input('period', 'month'); // day | week | month | custom
-        $repId       = $request->input('representative_id'); // optional filter
-        $startDate   = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate     = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+        $period    = $request->input('period', 'month');
+        $repId     = $request->input('representative_id');
+        $startDate = $request->input('start_date');
+        $endDate   = $request->input('end_date');
 
-        // Auto-adjust dates by period if not custom
-        if ($period === 'day' && !$request->has('start_date')) {
-            $startDate = now()->startOfDay()->format('Y-m-d');
-            $endDate   = now()->endOfDay()->format('Y-m-d');
-        } elseif ($period === 'week' && !$request->has('start_date')) {
-            $startDate = now()->startOfWeek()->format('Y-m-d');
-            $endDate   = now()->endOfWeek()->format('Y-m-d');
+        // Auto-adjust dates based on period
+        if (!$startDate || !$endDate) {
+            switch ($period) {
+                case 'day':
+                    $startDate = now()->startOfDay()->format('Y-m-d');
+                    $endDate   = now()->endOfDay()->format('Y-m-d');
+                    break;
+                case 'week':
+                    $startDate = now()->startOfWeek()->format('Y-m-d');
+                    $endDate   = now()->endOfWeek()->format('Y-m-d');
+                    break;
+                default: // month
+                    $startDate = now()->startOfMonth()->format('Y-m-d');
+                    $endDate   = now()->endOfMonth()->format('Y-m-d');
+            }
         }
 
-        // ─── Base Orders Query (COMPLETED) ──────────────────────────────────
-        $ordersQuery = Order::where('status', OrderStatus::COMPLETED)
+        // ─── 1. Summary ──────────────────────────────────────────────────────
+        $ordersBase = DB::table('orders')
+            ->where('status', OrderStatus::COMPLETED->value)
             ->whereDate('completed_at', '>=', $startDate)
             ->whereDate('completed_at', '<=', $endDate);
 
         if ($repId) {
-            $ordersQuery->where('representative_id', $repId);
+            $ordersBase->where('representative_id', $repId);
         }
 
-        // ─── Base OrderItems Query ───────────────────────────────────────────
-        $itemsQuery = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->where('orders.status', OrderStatus::COMPLETED)
+        $totalRevenue     = (float) (clone $ordersBase)->sum('total_amount');
+        $totalGrossProfit = (float) (clone $ordersBase)->sum('final_profit');
+        $totalOrdersCount = (int)   (clone $ordersBase)->count();
+
+        $totalExpenses = (float) DB::table('expenses')
+            ->whereDate('expense_date', '>=', $startDate)
+            ->whereDate('expense_date', '<=', $endDate)
+            ->sum('amount');
+
+        $netProfit = $totalGrossProfit - $totalExpenses;
+
+        // ─── 2. Helper: Base items joined with orders + products ──────────────
+        // We'll build this inline for each query to avoid clone issues
+
+        // ─── 3. Top Books by Sales ────────────────────────────────────────────
+        $topBooksBySales = $this->queryTopBooks($startDate, $endDate, $repId, 'total_qty');
+
+        // ─── 4. Top Books by Revenue ──────────────────────────────────────────
+        $topBooksByRevenue = $this->queryTopBooks($startDate, $endDate, $repId, 'total_revenue');
+
+        // ─── 5. Top Books by Profit ───────────────────────────────────────────
+        $topBooksByProfit = $this->queryTopBooks($startDate, $endDate, $repId, 'total_profit');
+
+        // ─── 6. Top Authors by Sales ──────────────────────────────────────────
+        $topAuthors = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('orders.status', OrderStatus::COMPLETED->value)
             ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate);
-
-        if ($repId) {
-            $itemsQuery->where('orders.representative_id', $repId);
-        }
-
-        // ─── 1. Summary ──────────────────────────────────────────────────────
-        $totalRevenue      = (float) (clone $ordersQuery)->sum('total_amount');
-        $totalGrossProfit  = (float) (clone $ordersQuery)->sum('final_profit');
-        $totalOrdersCount  = (int)   (clone $ordersQuery)->count();
-
-        $expensesQuery = Expense::whereDate('expense_date', '>=', $startDate)
-            ->whereDate('expense_date', '<=', $endDate);
-        $totalExpenses = (float) $expensesQuery->sum('amount');
-        $netProfit     = $totalGrossProfit - $totalExpenses;
-
-        // ─── 2. Top Books by Sales (qty) ─────────────────────────────────────
-        $topBooksBySales = (clone $itemsQuery)
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->leftJoin('product_images', function ($join) {
-                $join->on('product_images.product_id', '=', 'products.id')
-                     ->whereRaw('product_images.id = (SELECT id FROM product_images pi2 WHERE pi2.product_id = products.id ORDER BY pi2.image_order ASC LIMIT 1)');
-            })
-            ->selectRaw('
-                products.id,
-                products.name,
-                products.author,
-                product_images.image_path as image_path,
-                SUM(order_items.quantity) as total_qty,
-                SUM(order_items.subtotal) as total_revenue,
-                SUM(order_items.profit_subtotal) as total_profit
-            ')
-            ->groupBy('products.id', 'products.name', 'products.author', 'product_images.image_path')
-            ->orderByDesc('total_qty')
-            ->limit(5)
-            ->get()
-            ->map(fn($b) => [
-                'id'            => $b->id,
-                'name'          => $b->name,
-                'author'        => $b->author,
-                'image_url'     => $b->image_path ? storage_url($b->image_path) : null,
-                'sales_qty'     => (int) $b->total_qty,
-                'total_revenue' => (float) $b->total_revenue,
-                'total_profit'  => (float) $b->total_profit,
-            ]);
-
-        // ─── 3. Top Books by Revenue ─────────────────────────────────────────
-        $topBooksByRevenue = (clone $itemsQuery)
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->leftJoin('product_images', function ($join) {
-                $join->on('product_images.product_id', '=', 'products.id')
-                     ->whereRaw('product_images.id = (SELECT id FROM product_images pi2 WHERE pi2.product_id = products.id ORDER BY pi2.image_order ASC LIMIT 1)');
-            })
-            ->selectRaw('
-                products.id,
-                products.name,
-                products.author,
-                product_images.image_path as image_path,
-                SUM(order_items.quantity) as total_qty,
-                SUM(order_items.subtotal) as total_revenue,
-                SUM(order_items.profit_subtotal) as total_profit
-            ')
-            ->groupBy('products.id', 'products.name', 'products.author', 'product_images.image_path')
-            ->orderByDesc('total_revenue')
-            ->limit(5)
-            ->get()
-            ->map(fn($b) => [
-                'id'            => $b->id,
-                'name'          => $b->name,
-                'author'        => $b->author,
-                'image_url'     => $b->image_path ? storage_url($b->image_path) : null,
-                'sales_qty'     => (int) $b->total_qty,
-                'total_revenue' => (float) $b->total_revenue,
-                'total_profit'  => (float) $b->total_profit,
-            ]);
-
-        // ─── 4. Top Books by Profit ──────────────────────────────────────────
-        $topBooksByProfit = (clone $itemsQuery)
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->leftJoin('product_images', function ($join) {
-                $join->on('product_images.product_id', '=', 'products.id')
-                     ->whereRaw('product_images.id = (SELECT id FROM product_images pi2 WHERE pi2.product_id = products.id ORDER BY pi2.image_order ASC LIMIT 1)');
-            })
-            ->selectRaw('
-                products.id,
-                products.name,
-                products.author,
-                product_images.image_path as image_path,
-                SUM(order_items.quantity) as total_qty,
-                SUM(order_items.subtotal) as total_revenue,
-                SUM(order_items.profit_subtotal) as total_profit
-            ')
-            ->groupBy('products.id', 'products.name', 'products.author', 'product_images.image_path')
-            ->orderByDesc('total_profit')
-            ->limit(5)
-            ->get()
-            ->map(fn($b) => [
-                'id'            => $b->id,
-                'name'          => $b->name,
-                'author'        => $b->author,
-                'image_url'     => $b->image_path ? storage_url($b->image_path) : null,
-                'sales_qty'     => (int) $b->total_qty,
-                'total_revenue' => (float) $b->total_revenue,
-                'total_profit'  => (float) $b->total_profit,
-            ]);
-
-        // ─── 5. Top Authors by Sales ─────────────────────────────────────────
-        $topAuthors = (clone $itemsQuery)
-            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->whereNotNull('products.author')
+            ->where('products.author', '!=', '')
             ->selectRaw('products.author, SUM(order_items.quantity) as total_qty, SUM(order_items.subtotal) as total_revenue')
             ->groupBy('products.author')
             ->orderByDesc('total_qty')
@@ -164,10 +95,16 @@ class ReportApiController extends Controller
                 'total_revenue' => (float) $a->total_revenue,
             ]);
 
-        // ─── 6. Top Publishers by Sales ──────────────────────────────────────
-        $topPublishers = (clone $itemsQuery)
+        // ─── 7. Top Publishers by Sales ───────────────────────────────────────
+        $topPublishers = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('orders.status', OrderStatus::COMPLETED->value)
+            ->whereDate('orders.completed_at', '>=', $startDate)
+            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->whereNotNull('products.publisher')
+            ->where('products.publisher', '!=', '')
             ->selectRaw('products.publisher, SUM(order_items.quantity) as total_qty, SUM(order_items.subtotal) as total_revenue')
             ->groupBy('products.publisher')
             ->orderByDesc('total_qty')
@@ -179,76 +116,83 @@ class ReportApiController extends Controller
                 'total_revenue' => (float) $p->total_revenue,
             ]);
 
-        // ─── 7. Section Profits (Parent Category) ────────────────────────────
-        $sectionProfits = (clone $itemsQuery)
+        // ─── 8. Section Profits (Parent Category) ─────────────────────────────
+        $sectionProfits = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('categories as parents', 'categories.parent_id', '=', 'parents.id')
+            ->where('orders.status', OrderStatus::COMPLETED->value)
+            ->whereDate('orders.completed_at', '>=', $startDate)
+            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->selectRaw('COALESCE(parents.name, categories.name) as section_name, SUM(order_items.profit_subtotal) as profit')
             ->groupBy('section_name')
             ->orderByDesc('profit')
             ->get();
 
-        // ─── 8. Rep Performance (Sales + Balance + Withdrawals) ──────────────
-        $repPerfQuery = Order::where('status', OrderStatus::COMPLETED)
+        // ─── 9. Rep Performance ────────────────────────────────────────────────
+        $repPerformance = [];
+        $repRows = DB::table('orders')
+            ->where('status', OrderStatus::COMPLETED->value)
             ->whereDate('completed_at', '>=', $startDate)
-            ->whereDate('completed_at', '<=', $endDate);
-
-        if ($repId) {
-            $repPerfQuery->where('representative_id', $repId);
-        }
-
-        $repPerformance = $repPerfQuery
-            ->with(['representative' => fn($q) => $q->select('id', 'name', 'balance', 'image')])
+            ->whereDate('completed_at', '<=', $endDate)
+            ->when($repId, fn($q) => $q->where('representative_id', $repId))
             ->selectRaw('representative_id, SUM(final_profit) as total_profit, SUM(total_amount) as total_revenue, COUNT(*) as orders_count')
             ->groupBy('representative_id')
             ->orderByDesc('total_profit')
             ->limit(10)
-            ->get()
-            ->map(function ($row) {
-                $rep = $row->representative;
-                if (!$rep) return null;
+            ->get();
 
-                $totalWithdrawals = (float) WithdrawalRequest::where('representative_id', $rep->id)
-                    ->where('status', WithdrawalStatus::APPROVED)
-                    ->sum('amount');
+        foreach ($repRows as $row) {
+            if (!$row->representative_id) continue;
+            $rep = DB::table('representatives')->where('id', $row->representative_id)->first(['id', 'name', 'balance', 'image']);
+            if (!$rep) continue;
 
-                return [
-                    'representative_id'  => $row->representative_id,
-                    'name'               => $rep->name,
-                    'image_url'          => $rep->image ? storage_url($rep->image) : null,
-                    'orders_count'       => (int) $row->orders_count,
-                    'total_revenue'      => (float) $row->total_revenue,
-                    'total_profit'       => (float) $row->total_profit,
-                    'current_balance'    => (float) $rep->balance,
-                    'total_withdrawals'  => $totalWithdrawals,
-                ];
-            })
-            ->filter()
-            ->values();
+            $totalWithdrawals = (float) DB::table('withdrawal_requests')
+                ->where('representative_id', $rep->id)
+                ->where('status', WithdrawalStatus::APPROVED->value)
+                ->sum('amount');
 
-        // ─── 9. Rep Balance Summary ───────────────────────────────────────────
-        $repsForBalance = $repId
-            ? Representative::where('id', $repId)->get()
-            : Representative::all();
+            $repPerformance[] = [
+                'representative_id' => $row->representative_id,
+                'name'              => $rep->name,
+                'image_url'         => $rep->image ? storage_url($rep->image) : null,
+                'orders_count'      => (int) $row->orders_count,
+                'total_revenue'     => (float) $row->total_revenue,
+                'total_profit'      => (float) $row->total_profit,
+                'current_balance'   => (float) $rep->balance,
+                'total_withdrawals' => $totalWithdrawals,
+            ];
+        }
 
-        $totalRepBalance = (float) $repsForBalance->sum('balance');
-        $totalRepWithdrawals = (float) WithdrawalRequest::whereIn('representative_id', $repsForBalance->pluck('id'))
-            ->where('status', WithdrawalStatus::APPROVED)
-            ->sum('amount');
+        // ─── 10. Rep Balance Summary ───────────────────────────────────────────
+        if ($repId) {
+            $repForBalance = DB::table('representatives')->where('id', $repId)->first(['id', 'balance']);
+            $totalRepBalance = $repForBalance ? (float) $repForBalance->balance : 0.0;
+            $totalRepWithdrawals = (float) DB::table('withdrawal_requests')
+                ->where('representative_id', $repId)
+                ->where('status', WithdrawalStatus::APPROVED->value)
+                ->sum('amount');
+        } else {
+            $totalRepBalance = (float) DB::table('representatives')->sum('balance');
+            $totalRepWithdrawals = (float) DB::table('withdrawal_requests')
+                ->where('status', WithdrawalStatus::APPROVED->value)
+                ->sum('amount');
+        }
 
-        // ─── 10. Expense Breakdown ────────────────────────────────────────────
-        $expenseCategories = Expense::whereDate('expense_date', '>=', $startDate)
+        // ─── 11. Expense Breakdown ─────────────────────────────────────────────
+        $expenseCategories = DB::table('expenses')
+            ->whereDate('expense_date', '>=', $startDate)
             ->whereDate('expense_date', '<=', $endDate)
             ->selectRaw('COALESCE(category, "عام") as category_name, SUM(amount) as total')
             ->groupBy('category_name')
             ->orderByDesc('total')
             ->get();
 
-        // ─── 11. Chart Data ───────────────────────────────────────────────────
+        // ─── 12. Chart Data ────────────────────────────────────────────────────
         $chartData = $this->buildChartData($startDate, $endDate, $repId);
 
-        // ─── Response ─────────────────────────────────────────────────────────
         return response()->json([
             'summary' => [
                 'total_revenue'      => $totalRevenue,
@@ -257,20 +201,20 @@ class ReportApiController extends Controller
                 'net_profit'         => $netProfit,
                 'total_orders'       => $totalOrdersCount,
             ],
-            'section_profits'        => $sectionProfits,
-            'rep_performance'        => $repPerformance,
-            'expense_categories'     => $expenseCategories,
-            'top_books_by_sales'     => $topBooksBySales,
-            'top_books_by_revenue'   => $topBooksByRevenue,
-            'top_books_by_profit'    => $topBooksByProfit,
-            'top_authors'            => $topAuthors,
-            'top_publishers'         => $topPublishers,
-            'rep_balance_summary' => [
-                'total_balance'      => $totalRepBalance,
-                'total_withdrawals'  => $totalRepWithdrawals,
+            'section_profits'      => $sectionProfits,
+            'rep_performance'      => $repPerformance,
+            'expense_categories'   => $expenseCategories,
+            'top_books_by_sales'   => $topBooksBySales,
+            'top_books_by_revenue' => $topBooksByRevenue,
+            'top_books_by_profit'  => $topBooksByProfit,
+            'top_authors'          => $topAuthors,
+            'top_publishers'       => $topPublishers,
+            'rep_balance_summary'  => [
+                'total_balance'     => $totalRepBalance,
+                'total_withdrawals' => $totalRepWithdrawals,
             ],
-            'chart_data'             => $chartData,
-            'dates' => [
+            'chart_data' => $chartData,
+            'dates'      => [
                 'start'  => $startDate,
                 'end'    => $endDate,
                 'period' => $period,
@@ -279,58 +223,118 @@ class ReportApiController extends Controller
     }
 
     /**
-     * Build weekly chart data points between two dates.
+     * Query top books with image — separate function to avoid clone issues.
+     */
+    private function queryTopBooks(string $startDate, string $endDate, ?string $repId, string $orderBy): \Illuminate\Support\Collection
+    {
+        $rows = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('orders.status', OrderStatus::COMPLETED->value)
+            ->whereDate('orders.completed_at', '>=', $startDate)
+            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
+            ->selectRaw('
+                products.id,
+                products.name,
+                products.author,
+                SUM(order_items.quantity) as total_qty,
+                SUM(order_items.subtotal) as total_revenue,
+                SUM(order_items.profit_subtotal) as total_profit
+            ')
+            ->groupBy('products.id', 'products.name', 'products.author')
+            ->orderByDesc($orderBy)
+            ->limit(5)
+            ->get();
+
+        return $rows->map(function ($book) {
+            // Get first image for this product
+            $image = DB::table('product_images')
+                ->where('product_id', $book->id)
+                ->orderBy('image_order')
+                ->first(['image_path']);
+
+            return [
+                'id'            => $book->id,
+                'name'          => $book->name,
+                'author'        => $book->author,
+                'image_url'     => ($image && $image->image_path) ? storage_url($image->image_path) : null,
+                'sales_qty'     => (int) $book->total_qty,
+                'total_revenue' => (float) $book->total_revenue,
+                'total_profit'  => (float) $book->total_profit,
+            ];
+        });
+    }
+
+    /**
+     * Build chart data points (revenue + expenses over time).
      */
     private function buildChartData(string $startDate, string $endDate, ?string $repId): array
     {
-        $start = \Carbon\Carbon::parse($startDate);
-        $end   = \Carbon\Carbon::parse($endDate);
+        $start = Carbon::parse($startDate);
+        $end   = Carbon::parse($endDate);
         $diff  = $start->diffInDays($end);
 
-        // Group by week if range > 14 days, else by day
-        $groupFormat = $diff > 60 ? '%Y-%m' : ($diff > 14 ? '%Y-%u' : '%Y-%m-%d');
-        $labelFormat = $diff > 60 ? 'M Y' : ($diff > 14 ? 'W' : 'd/m');
+        if ($diff > 60) {
+            $groupFormat = '%Y-%m';
+        } elseif ($diff > 14) {
+            $groupFormat = '%Y-%u'; // week number
+        } else {
+            $groupFormat = '%Y-%m-%d';
+        }
 
-        $revenueData = Order::where('status', OrderStatus::COMPLETED)
+        $revenueRows = DB::table('orders')
+            ->where('status', OrderStatus::COMPLETED->value)
             ->whereDate('completed_at', '>=', $startDate)
             ->whereDate('completed_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('representative_id', $repId))
-            ->selectRaw("DATE_FORMAT(completed_at, '{$groupFormat}') as period, SUM(total_amount) as total, SUM(final_profit) as profit")
+            ->selectRaw("DATE_FORMAT(completed_at, '{$groupFormat}') as period, SUM(total_amount) as revenue, SUM(final_profit) as profit")
             ->groupBy('period')
             ->orderBy('period')
             ->get()
             ->keyBy('period');
 
-        $expenseData = Expense::whereDate('expense_date', '>=', $startDate)
+        $expenseRows = DB::table('expenses')
+            ->whereDate('expense_date', '>=', $startDate)
             ->whereDate('expense_date', '<=', $endDate)
-            ->selectRaw("DATE_FORMAT(expense_date, '{$groupFormat}') as period, SUM(amount) as total")
+            ->selectRaw("DATE_FORMAT(expense_date, '{$groupFormat}') as period, SUM(amount) as expenses")
             ->groupBy('period')
             ->orderBy('period')
             ->get()
             ->keyBy('period');
 
-        $allPeriods = $revenueData->keys()->merge($expenseData->keys())->unique()->sort()->values();
+        $allPeriods = $revenueRows->keys()
+            ->merge($expenseRows->keys())
+            ->unique()
+            ->sort()
+            ->values();
 
-        return $allPeriods->map(function ($period) use ($revenueData, $expenseData, $labelFormat, $groupFormat) {
-            $rev  = $revenueData->get($period);
-            $exp  = $expenseData->get($period);
-            $label = $period;
-            try {
-                if ($groupFormat === '%Y-%m-%d') {
-                    $label = \Carbon\Carbon::createFromFormat('Y-m-d', $period)->format('d/m');
-                } elseif ($groupFormat === '%Y-%m') {
-                    $label = \Carbon\Carbon::createFromFormat('Y-m', $period)->format('M');
-                } else {
-                    $label = 'أسبوع ' . (int) substr($period, -2);
-                }
-            } catch (\Exception $e) {}
-
+        return $allPeriods->map(function ($period) use ($revenueRows, $expenseRows, $groupFormat) {
+            $rev  = $revenueRows->get($period);
+            $exp  = $expenseRows->get($period);
+            $label = $this->formatPeriodLabel($period, $groupFormat);
             return [
                 'label'    => $label,
-                'revenue'  => (float) ($rev?->total ?? 0),
+                'revenue'  => (float) ($rev?->revenue ?? 0),
                 'profit'   => (float) ($rev?->profit ?? 0),
-                'expenses' => (float) ($exp?->total ?? 0),
+                'expenses' => (float) ($exp?->expenses ?? 0),
             ];
         })->values()->toArray();
+    }
+
+    private function formatPeriodLabel(string $period, string $format): string
+    {
+        try {
+            if ($format === '%Y-%m-%d') {
+                return Carbon::createFromFormat('Y-m-d', $period)->format('d/m');
+            }
+            if ($format === '%Y-%m') {
+                return Carbon::createFromFormat('Y-m', $period)->translatedFormat('M');
+            }
+            // Week format: 2025-03 (week 3 of 2025)
+            return 'أسبوع ' . (int) substr($period, -2);
+        } catch (\Exception $e) {
+            return $period;
+        }
     }
 }
