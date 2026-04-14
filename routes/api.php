@@ -103,10 +103,11 @@ Route::prefix('admin')->group(function () {
 
         // Inventory routes
         Route::prefix('inventory')->group(function () {
+            // Specific routes MUST come before apiResource to avoid {product} catching them
+            Route::get('products/low-stock', [ProductController::class, 'getLowStock']);
             Route::get('products/{product}/recommendations', [ProductController::class, 'recommendations']);
             Route::apiResource('products', ProductController::class);
             Route::post('products/{product}/add-quantity', [ProductController::class, 'addQuantity']);
-            Route::get('products/low-stock', [ProductController::class, 'getLowStock']);
 
             Route::apiResource('categories', CategoryController::class);
             Route::apiResource('suppliers', SupplierController::class);
