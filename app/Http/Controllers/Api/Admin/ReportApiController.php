@@ -4,16 +4,13 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Enums\OrderStatus;
-use App\Enums\TransactionType;
-use App\Enums\TransactionStatus;
+use App\Enums\WithdrawalStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Expense;
 use App\Models\Representative;
-use App\Models\RepresentativeTransaction;
 use App\Models\WithdrawalRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ReportApiController extends Controller
 {
@@ -213,7 +210,7 @@ class ReportApiController extends Controller
                 if (!$rep) return null;
 
                 $totalWithdrawals = (float) WithdrawalRequest::where('representative_id', $rep->id)
-                    ->where('status', 'approved')
+                    ->where('status', WithdrawalStatus::APPROVED)
                     ->sum('amount');
 
                 return [
@@ -237,7 +234,7 @@ class ReportApiController extends Controller
 
         $totalRepBalance = (float) $repsForBalance->sum('balance');
         $totalRepWithdrawals = (float) WithdrawalRequest::whereIn('representative_id', $repsForBalance->pluck('id'))
-            ->where('status', 'approved')
+            ->where('status', WithdrawalStatus::APPROVED)
             ->sum('amount');
 
         // ─── 10. Expense Breakdown ────────────────────────────────────────────
