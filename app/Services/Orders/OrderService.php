@@ -348,7 +348,7 @@ class OrderService
 
         // Send notification
         try {
-            app(\App\Services\Notifications\NotificationService::class)->sendOrderStatusNotification($order, $oldStatus, $status->value);
+            app(\App\Services\Notifications\NotificationService::class)->sendOrderStatusNotification($order, $oldStatus->value, $status->value);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error triggering order status change notification: ' . $e->getMessage());
         }

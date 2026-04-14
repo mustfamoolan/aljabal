@@ -89,7 +89,7 @@ class OrderController extends Controller
                 // Automate Status Change to Prepared
                 $this->orderService->changeOrderStatus($order, OrderStatus::PREPARED, auth()->user());
 
-                return redirect()->route('admin.orders.show', $order)
+                return back()
                     ->with('success', 'تم تجهيز الطلب وإرساله للوسيط بنجاح!');
             }
 
