@@ -31,6 +31,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Waseet Webhooks (Directly from Gateway)
+Route::post('/webhooks/waseet-status', [\App\Http\Controllers\Api\Webhooks\WaseetWebhookController::class, 'handle']);
+
 // Admin API Routes
 Route::prefix('admin')->group(function () {
     // Auth routes (no authentication required)
