@@ -9,11 +9,14 @@ class WaseetWebhookController extends Controller
 {
     public function handle(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info("Incoming Waseet Webhook:", $request->all());
+
         $apiKey = $request->header('X-API-KEY');
         $setting = \App\Models\GatewaySetting::first();
 
         // Security check
         if (!$setting || $apiKey !== $setting->api_key) {
+            \Illuminate\Support\Facades\Log::warning("Unauthorized Webhook Attempt. Provided Key: $apiKey");
             return response()->json(['message' => 'Unauthorized'], 401);
         }
 
