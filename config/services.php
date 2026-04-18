@@ -41,4 +41,8 @@ return [
         'vapid_key' => env('FCM_VAPID_KEY'),
     ],
 
+    'gateway' => [
+        'url' => env('GATEWAY_URL', 'https://salesflowi.cloud'),
+    ],
+
 ];

@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\Log;
 
 class GatewayIntegrationService
 {
-    protected string $defaultGatewayUrl = 'https://salesflowi.cloud';
+    protected function getGatewayUrl(): string
+    {
+        return config('services.gateway.url', 'https://salesflowi.cloud');
+    }
 
     /**
      * Connect to the Gateway and retrieve an API Key by registering the project.
@@ -17,7 +20,7 @@ class GatewayIntegrationService
     public function connect(string $username, string $password): array
     {
         $setting = GatewaySetting::first() ?? new GatewaySetting();
-        $url = rtrim($this->defaultGatewayUrl, '/');
+        $url = rtrim($this->getGatewayUrl(), '/');
         $projectName = 'Al Jabal ' . config('app.env');
 
         try {
@@ -81,7 +84,7 @@ class GatewayIntegrationService
             return ['success' => false, 'message' => 'يجب الاتصال بالبوابة أولاً!'];
         }
 
-        $url = rtrim($this->defaultGatewayUrl, '/');
+        $url = rtrim($this->getGatewayUrl(), '/');
         
         try {
             // 1. Fetch Governorates (Cities in Waseet)
@@ -254,7 +257,7 @@ class GatewayIntegrationService
             }
 
             // Call the SalesFlowi Gateway Bridge
-            $url = rtrim($this->defaultGatewayUrl, '/') . '/api/gateway/create-order';
+            $url = rtrim($this->getGatewayUrl(), '/') . '/api/gateway/create-order';
             $response = Http::timeout(30)
                 ->withHeaders([
                     'Project' => $setting->project_name,
@@ -323,7 +326,7 @@ class GatewayIntegrationService
                 $response = Http::withHeaders([
                     'Project' => $setting->project_name,
                     'X-API-KEY' => $setting->api_key,
-                ])->get(rtrim($this->defaultGatewayUrl, '/') . '/api/gateway/statuses');
+                ])->get(rtrim($this->getGatewayUrl(), '/') . '/api/gateway/statuses');
 
                 if ($response->successful()) {
                     return $response->json()['data'] ?? [];
@@ -347,7 +350,7 @@ class GatewayIntegrationService
             $response = Http::withHeaders([
                 'Project' => $setting->project_name,
                 'X-API-KEY' => $setting->api_key,
-            ])->get(rtrim($this->defaultGatewayUrl, '/') . "/api/gateway/order-status/{$waseetOrderId}");
+            ])->get(rtrim($this->getGatewayUrl(), '/') . "/api/gateway/order-status/{$waseetOrderId}");
 
             if ($response->successful()) {
                 $data = $response->json();
