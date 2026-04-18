@@ -32,6 +32,14 @@ class WaseetWebhookController extends Controller
             'waseet_status' => $newWaseetStatus
         ]);
 
+        // Log the status change (History)
+        \Illuminate\Support\Facades\DB::table('order_status_logs')->insert([
+            'order_id' => $order->id,
+            'status' => $newWaseetStatus,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         // Automate internal status mapping
         try {
             $orderService = app(\App\Services\Orders\OrderService::class);

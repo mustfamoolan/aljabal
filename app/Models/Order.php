@@ -157,4 +157,11 @@ class Order extends Model
     {
         return $query->where('representative_id', $representativeId);
     }
+    /**
+     * Get the status logs for the order.
+     */
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(OrderStatusLog::class)->orderBy('created_at', 'desc');
+    }
 }

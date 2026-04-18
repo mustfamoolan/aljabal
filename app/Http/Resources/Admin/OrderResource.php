@@ -49,6 +49,11 @@ class OrderResource extends JsonResource
             'waseet_order_id' => $this->waseet_order_id,
             'waseet_tracking_url' => $this->waseet_tracking_url,
             'waseet_status' => $this->waseet_status,
+            'status_logs' => $this->statusLogs->map(fn($log) => [
+                'status' => $log->status,
+                'created_at' => $log->created_at?->diffForHumans(),
+                'exact_time' => $log->created_at?->toDateTimeString(),
+            ]),
             'created_at' => $this->created_at?->toDateTimeString(),
             'completed_at' => $this->completed_at?->toDateTimeString(),
         ];
