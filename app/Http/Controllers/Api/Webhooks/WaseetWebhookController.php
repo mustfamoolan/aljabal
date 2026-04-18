@@ -74,7 +74,7 @@ class WaseetWebhookController extends Controller
             'واصل', 'مباع', 'تم تسليم المبالغ' => \App\Enums\OrderStatus::COMPLETED,
             'راجع', 'تم استلام الراجع', 'إيداع راجع' => \App\Enums\OrderStatus::RETURNED,
             'ملغي' => \App\Enums\OrderStatus::CANCELLED,
-            'قيد المعالجة', 'تم التجهيز' => \App\Enums\OrderStatus::PREPARED,
+            'قيد المعالجة', 'تم التجهيز', 'تم الاستلام من قبل المندوب' => \App\Enums\OrderStatus::PREPARED,
             default => null,
         };
     }
