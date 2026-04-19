@@ -276,6 +276,14 @@ class GatewayIntegrationService
                     'waseet_status' => 'قيد المعالجة',
                 ]);
 
+                // Create initial history log (First Movement)
+                \App\Models\OrderStatusLog::create([
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'waseet_status' => 'قيد المعالجة (تم الإرسال للوسيط)',
+                    'notes' => 'تم رفع الطلب بنجاح لشركة الوسيط وحجز رقم تتبع.',
+                ]);
+
                 return ['success' => true, 'message' => 'تم إرسال الطلب وحجز رقم تتبع بنجاح!'];
             }
 
