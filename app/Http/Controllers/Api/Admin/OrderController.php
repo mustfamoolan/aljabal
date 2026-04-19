@@ -90,10 +90,15 @@ class OrderController extends Controller
             'customer_name' => 'sometimes|string',
             'customer_phone' => 'sometimes|string',
             'customer_phone_2' => 'sometimes|nullable|string',
+            'customer_social_media' => 'sometimes|nullable|string',
             'customer_address' => 'sometimes|string',
             'customer_notes' => 'sometimes|nullable|string',
             'governorate_id' => 'sometimes|exists:governorates,id',
             'district_id' => 'sometimes|exists:districts,id',
+            'representative_id' => 'sometimes|nullable|exists:representatives,id',
+            'gift_id' => 'sometimes|nullable|exists:gift_settings,id',
+            'gift_box_id' => 'sometimes|nullable|exists:gift_settings,id',
+            'is_withdrawal_order' => 'sometimes|boolean',
             'total_amount' => 'sometimes|numeric',
             'items' => 'sometimes|array',
             'items.*.product_id' => 'required_with:items|exists:products,id',
@@ -106,7 +111,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'message' => 'تم تحديث الطلب بنجاح',
-                'data' => new OrderResource($updatedOrder->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district'])),
+                'data' => new OrderResource($updatedOrder->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district', 'gift', 'giftBox'])),
             ]);
         } catch (\Exception $e) {
             return response()->json([
