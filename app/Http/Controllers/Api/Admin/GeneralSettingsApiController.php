@@ -43,7 +43,12 @@ class GeneralSettingsApiController extends Controller
                 'last_sync_at' => $gatewaySetting->last_sync_at ? $gatewaySetting->last_sync_at->toDateTimeString() : null,
                 'project_name' => $gatewaySetting->project_name,
             ] : null,
-            'governorates' => \App\Models\Governorate::active()->orderBy('name')->get(['id', 'name']),
+            'governorates' => \App\Models\Governorate::active()
+                ->with(['districts' => function($query) {
+                    $query->active()->orderBy('name');
+                }])
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 
