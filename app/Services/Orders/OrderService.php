@@ -115,6 +115,14 @@ class OrderService
                 \Illuminate\Support\Facades\Log::error('Error triggering new order notification: ' . $e->getMessage());
             }
 
+            // Record the initial "Order Created" movement
+            \App\Models\OrderStatusLog::create([
+                'order_id' => $order->id,
+                'status' => $order->status->value,
+                'waseet_status' => 'تم إنشاء الطلب',
+                'notes' => 'تم استلام الطلب وبانتظار التجهيز.',
+            ]);
+
             return $order;
         });
     }
@@ -344,6 +352,14 @@ class OrderService
         $order->update([
             'status' => $status,
             'completed_at' => $status === OrderStatus::COMPLETED ? now() : null,
+        ]);
+
+        // Record the movement in timeline
+        \App\Models\OrderStatusLog::create([
+            'order_id' => $order->id,
+            'status' => $status->value,
+            'waseet_status' => $status->label(),
+            'notes' => 'تحديث الحالة يدوياً من قبل الإدارة.',
         ]);
 
         // Send notification

@@ -49,10 +49,13 @@ class OrderResource extends JsonResource
             'waseet_order_id' => $this->waseet_order_id,
             'waseet_tracking_url' => $this->waseet_tracking_url,
             'waseet_status' => $this->waseet_status,
-            'status_logs' => $this->statusLogs->map(fn($log) => [
+            'status_logs' => $this->statusLogs()->orderBy('created_at', 'desc')->get()->map(fn($log) => [
                 'status' => $log->status,
-                'created_at' => $log->created_at?->diffForHumans(),
-                'exact_time' => $log->created_at?->toDateTimeString(),
+                'status_label' => $log->waseet_status ?? 'تحديث الحالة',
+                'notes' => $log->notes,
+                'date' => $log->created_at?->format('Y-m-d'),
+                'time' => $log->created_at?->format('H:i'),
+                'created_at_human' => $log->created_at?->diffForHumans(),
             ]),
             'created_at' => $this->created_at?->toDateTimeString(),
             'completed_at' => $this->completed_at?->toDateTimeString(),
