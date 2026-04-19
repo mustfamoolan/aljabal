@@ -23,7 +23,7 @@ class OrderController extends Controller
      */
     public function index(Request $request): View
     {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
             abort(403);
         }
 
@@ -59,7 +59,7 @@ class OrderController extends Controller
      */
     public function show(Order $order): View
     {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
             abort(403);
         }
 
@@ -78,7 +78,7 @@ class OrderController extends Controller
      */
     public function sendToWaseet(Order $order): RedirectResponse
     {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
             abort(403);
         }
 
@@ -104,7 +104,7 @@ class OrderController extends Controller
      */
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
             abort(403);
         }
 
@@ -127,7 +127,7 @@ class OrderController extends Controller
      */
     public function edit(Order $order): View
     {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
             abort(403);
         }
 
@@ -141,7 +141,7 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order): RedirectResponse
     {
-        if (!auth()->user()->isAdmin()) {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
             abort(403);
         }
 
@@ -160,6 +160,79 @@ class OrderController extends Controller
             return redirect()->route('admin.orders.show', $order)
                 ->with('success', 'تم تحديث الطلب بنجاح.');
         } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
+        }
+    }
+    /**
+     * Store a new order from admin/employee.
+     */
+    public function store(Request $request)
+    {
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEmployee()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_address' => ['required', 'string'],
+            'customer_phone' => ['required', 'string', 'max:255'],
+            'customer_phone_2' => ['nullable', 'string', 'max:255'],
+            'customer_social_media' => ['nullable', 'string', 'max:255'],
+            'customer_notes' => ['nullable', 'string'],
+            'governorate_id' => ['required', 'exists:governorates,id'],
+            'district_id' => ['nullable', 'exists:districts,id'],
+            'gift_id' => ['nullable', 'exists:gift_settings,id'],
+            'gift_box_id' => ['nullable', 'exists:gift_settings,id'],
+            'representative_id' => ['nullable', 'exists:representatives,id'],
+            'is_withdrawal_order' => ['boolean'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.customer_price' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        try {
+            $user = auth()->user();
+            $representative = null;
+            if ($request->representative_id) {
+                $representative = \App\Models\Representative::find($request->representative_id);
+            }
+
+            // Create order
+            $order = $this->orderService->createOrder(
+                $validated,
+                $representative,
+                $user
+            );
+
+            // Add items to order
+            foreach ($validated['items'] as $item) {
+                $product = \App\Models\Product::findOrFail($item['product_id']);
+                $this->orderService->addItemToOrder(
+                    $order,
+                    $product,
+                    $item['quantity'],
+                    (float) $item['customer_price']
+                );
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'تم إنشاء الطلب بنجاح',
+                    'order' => $order->load('orderItems.product'),
+                ]);
+            }
+
+            return redirect()->route('admin.orders.show', $order)
+                ->with('success', 'تم إنشاء الطلب بنجاح.');
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }

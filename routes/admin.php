@@ -146,6 +146,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Orders
     Route::prefix('orders')->name('admin.orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
+        Route::post('/', [OrderController::class, 'store'])->name('store');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
         Route::post('/{order}/status', [OrderController::class, 'updateStatus'])->name('update-status');
         Route::post('/{order}/send-to-waseet', [OrderController::class, 'sendToWaseet'])->name('send-to-waseet');
