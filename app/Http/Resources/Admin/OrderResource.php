@@ -51,7 +51,17 @@ class OrderResource extends JsonResource
             'waseet_status' => $this->waseet_status,
             'status_logs' => $this->statusLogs()->orderBy('created_at', 'desc')->get()->map(fn($log) => [
                 'status' => $log->status,
-                'status_label' => $log->waseet_status ?? (\App\Enums\OrderStatus::tryFrom($log->status)?->label() ?? 'تحديث الحالة'),
+                'status_label' => $log->waseet_status ?: (
+                    match($log->status) {
+                        'new' => 'تم استلام الطلب الجديد',
+                        'prepared' => 'تم تجهيز الطلب',
+                        'delivered' => 'تم التسليم من قبل المندوب',
+                        'completed' => 'مكتمل',
+                        'cancelled' => 'ملغي',
+                        'returned' => 'راجع',
+                        default => \App\Enums\OrderStatus::tryFrom($log->status)?->label() ?? $log->status
+                    }
+                ),
                 'notes' => $log->notes,
                 'date' => $log->created_at?->format('Y-m-d'),
                 'time' => $log->created_at?->format('H:i'),
