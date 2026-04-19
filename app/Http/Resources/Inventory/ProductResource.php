@@ -18,6 +18,7 @@ class ProductResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'sku' => $this->sku,
+            'main_image' => $this->image_url,
             'is_original' => $this->is_original,
             'product_type_label' => $this->is_original ? 'أصلي' : 'عادي',
             'category' => $this->whenLoaded('category', function () {
