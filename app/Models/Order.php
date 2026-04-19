@@ -36,7 +36,6 @@ class Order extends Model
         'is_withdrawal_order',
         'is_paid',
         'is_replacement',
-        'is_return',
         'waseet_order_id',
         'waseet_tracking_url',
         'waseet_status',
@@ -55,7 +54,6 @@ class Order extends Model
             'is_withdrawal_order' => 'boolean',
             'is_paid' => 'boolean',
             'is_replacement' => 'boolean',
-            'is_return' => 'boolean',
             'completed_at' => 'datetime',
         ];
     }

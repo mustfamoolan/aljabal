@@ -105,7 +105,6 @@ class OrderService
                 'is_withdrawal_order' => $customerData['is_withdrawal_order'] ?? false,
                 'is_paid' => $customerData['is_paid'] ?? false,
                 'is_replacement' => $customerData['is_replacement'] ?? false,
-                'is_return' => $customerData['is_return'] ?? false,
                 'status' => OrderStatus::NEW ,
                 'representative_id' => $representative?->id,
                 'created_by' => $user?->id,

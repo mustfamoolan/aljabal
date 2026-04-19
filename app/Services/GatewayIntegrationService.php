@@ -251,7 +251,6 @@ class GatewayIntegrationService
                 'package_size' => 1, // Default size
                 'merchant_notes' => $order->customer_notes ?? '',
                 'replacement' => $order->is_replacement ? 1 : 0,
-                'is_return' => $order->is_return ? 1 : 0,
             ];
 
             if ($order->customer_phone_2) {
@@ -378,7 +377,6 @@ class GatewayIntegrationService
                 'package_size' => 1,
                 'merchant_notes' => $order->customer_notes ?? '',
                 'replacement' => $order->is_replacement ? 1 : 0,
-                'is_return' => $order->is_return ? 1 : 0,
             ];
 
             if ($order->customer_phone_2) {
