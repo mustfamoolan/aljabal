@@ -82,6 +82,40 @@ class OrderController extends Controller
     }
 
     /**
+     * Update order.
+     */
+    public function update(Request $request, Order $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'customer_name' => 'sometimes|string',
+            'customer_phone' => 'sometimes|string',
+            'customer_phone_2' => 'sometimes|nullable|string',
+            'customer_address' => 'sometimes|string',
+            'customer_notes' => 'sometimes|nullable|string',
+            'governorate_id' => 'sometimes|exists:governorates,id',
+            'district_id' => 'sometimes|exists:districts,id',
+            'total_amount' => 'sometimes|numeric',
+            'items' => 'sometimes|array',
+            'items.*.product_id' => 'required_with:items|exists:products,id',
+            'items.*.quantity' => 'required_with:items|integer|min:1',
+            'items.*.customer_price' => 'sometimes|numeric',
+        ]);
+
+        try {
+            $updatedOrder = $this->orderService->updateOrder($order, $validated);
+
+            return response()->json([
+                'message' => 'تم تحديث الطلب بنجاح',
+                'data' => new OrderResource($updatedOrder->load(['orderItems.product', 'representative', 'createdBy', 'governorate', 'district'])),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
      * Update order status.
      */
     public function updateStatus(Request $request, Order $order): JsonResponse

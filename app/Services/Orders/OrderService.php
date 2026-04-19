@@ -384,16 +384,56 @@ class OrderService
         return DB::transaction(function () use ($order, $data) {
             $order->update($data);
 
+            // Sync items if provided
+            if (isset($data['items']) && is_array($data['items'])) {
+                $this->syncItems($order, $data['items']);
+            }
+
             // Record edit in history
             \App\Models\OrderStatusLog::create([
                 'order_id' => $order->id,
                 'status' => $order->status->value,
-                'waseet_status' => 'تعديل بيانات',
-                'notes' => 'تم تعديل بيانات الطلب من قبل الإدارة.',
+                'waseet_status' => 'تعديل بيانات والمنتجات',
+                'notes' => 'تم تعديل بيانات الطلب والمنتجات من قبل الإدارة.',
             ]);
 
             return $order->fresh();
         });
+    }
+
+    /**
+     * Sync order items and adjust stock.
+     */
+    protected function syncItems(Order $order, array $itemsData): void
+    {
+        $existingItems = $order->orderItems()->get()->keyBy('product_id');
+        $newProductIds = collect($itemsData)->pluck('product_id')->toArray();
+
+        // 1. Remove items not in the new list
+        foreach ($existingItems as $productId => $item) {
+            if (!in_array($productId, $newProductIds)) {
+                $this->removeOrderItem($item);
+            }
+        }
+
+        // 2. Add or update items
+        foreach ($itemsData as $itemData) {
+            $productId = $itemData['product_id'];
+            $quantity = (int) $itemData['quantity'];
+            $customerPrice = (float) ($itemData['customer_price'] ?? 0);
+
+            if ($existingItems->has($productId)) {
+                // Update existing
+                $this->updateOrderItem($existingItems[$productId], $quantity, $customerPrice);
+            } else {
+                // Add new
+                $product = Product::findOrFail($productId);
+                $this->addItemToOrder($order, $product, $quantity, $customerPrice);
+            }
+        }
+
+        // Final recalculation of totals
+        $this->calculateOrderTotals($order);
     }
 
     /**
