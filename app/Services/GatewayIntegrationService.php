@@ -247,9 +247,11 @@ class GatewayIntegrationService
                 'location' => $order->customer_address,
                 'type_name' => $typeName ?: 'منتجات منوعة',
                 'items_number' => $order->orderItems->sum('quantity'),
-                'price' => (int) $order->total_amount,
+                'price' => $order->is_paid ? 0 : (int) $order->total_amount,
                 'package_size' => 1, // Default size
                 'merchant_notes' => $order->customer_notes ?? '',
+                'replacement' => $order->is_replacement ? 1 : 0,
+                'is_return' => $order->is_return ? 1 : 0,
             ];
 
             if ($order->customer_phone_2) {
@@ -372,10 +374,11 @@ class GatewayIntegrationService
                 'location' => $order->customer_address,
                 'type_name' => $typeName ?: 'منتجات منوعة',
                 'items_number' => $order->orderItems->sum('quantity'),
-                'price' => (int) $order->total_amount,
+                'price' => $order->is_paid ? 0 : (int) $order->total_amount,
                 'package_size' => 1,
                 'merchant_notes' => $order->customer_notes ?? '',
-                'replacement' => 0,
+                'replacement' => $order->is_replacement ? 1 : 0,
+                'is_return' => $order->is_return ? 1 : 0,
             ];
 
             if ($order->customer_phone_2) {

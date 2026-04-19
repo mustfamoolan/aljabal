@@ -34,6 +34,9 @@ class Order extends Model
         'gift_box_id',
         'gift_price',
         'is_withdrawal_order',
+        'is_paid',
+        'is_replacement',
+        'is_return',
         'waseet_order_id',
         'waseet_tracking_url',
         'waseet_status',
@@ -50,6 +53,9 @@ class Order extends Model
             'delivery_fee' => 'decimal:2',
             'gift_price' => 'decimal:2',
             'is_withdrawal_order' => 'boolean',
+            'is_paid' => 'boolean',
+            'is_replacement' => 'boolean',
+            'is_return' => 'boolean',
             'completed_at' => 'datetime',
         ];
     }
