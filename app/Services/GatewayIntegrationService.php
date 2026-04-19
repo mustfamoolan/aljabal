@@ -347,6 +347,109 @@ class GatewayIntegrationService
     }
 
     /**
+     * Update an existing order on Waseet via Gateway
+     */
+    public function updateOrderOnGateway(\App\Models\Order $order): array
+    {
+        $setting = GatewaySetting::first();
+        if (!$setting || !$setting->is_connected || !$setting->api_key || !$order->waseet_order_id) {
+            return ['success' => false, 'message' => 'الطلب غير مربوط بالوسيط أو الإعدادات غير مكتملة.'];
+        }
+
+        try {
+            $order->load(['governorate', 'district', 'orderItems.product']);
+
+            // Generate content description from product names
+            $productNames = $order->orderItems->map(fn($item) => $item->product?->name ?? 'منتج')->unique()->join('، ');
+            $typeName = \Illuminate\Support\Str::limit($productNames, 90, '...');
+
+            $payload = [
+                'qr_id' => $order->waseet_order_id,
+                'client_name' => $order->customer_name,
+                'client_mobile' => $this->formatIraqiPhone($order->customer_phone),
+                'city_id' => $order->governorate_id,
+                'region_id' => $order->district_id,
+                'location' => $order->customer_address,
+                'type_name' => $typeName ?: 'منتجات منوعة',
+                'items_number' => $order->orderItems->sum('quantity'),
+                'price' => (int) $order->total_amount,
+                'package_size' => 1,
+                'merchant_notes' => $order->customer_notes ?? '',
+                'replacement' => 0,
+            ];
+
+            if ($order->customer_phone_2) {
+                $payload['client_mobile2'] = $this->formatIraqiPhone($order->customer_phone_2);
+            }
+
+            $url = rtrim($this->getGatewayUrl(), '/') . '/api/gateway/edit-order';
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Project' => $setting->project_name,
+                    'X-API-KEY' => $setting->api_key,
+                ])
+                ->asMultipart()
+                ->post($url, $payload);
+
+            $data = $response->json();
+
+            if ($response->successful() && ($data['status'] ?? false) === true) {
+                \App\Models\OrderStatusLog::create([
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'waseet_status' => 'تعديل بيانات الطلب',
+                    'notes' => 'تم تحديث بيانات الطلب بنجاح في نظام الوسيط.',
+                ]);
+                return ['success' => true, 'message' => 'تم تحديث البيانات في الوسيط بنجاح!'];
+            }
+
+            return ['success' => false, 'message' => $data['msg'] ?? 'فشل تحديث الطلب في الوسيط.'];
+        } catch (\Exception $e) {
+            Log::error("Waseet Gateway Update Error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'خطأ في الاتصال بالبوابة: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Cancel an order on Waseet via Gateway
+     */
+    public function cancelOrderOnGateway(\App\Models\Order $order): array
+    {
+        $setting = GatewaySetting::first();
+        if (!$setting || !$setting->is_connected || !$order->waseet_order_id) {
+            return ['success' => false, 'message' => 'الطلب غير مربوط بالوسيط.'];
+        }
+
+        try {
+            $url = rtrim($this->getGatewayUrl(), '/') . '/api/gateway/delete-order';
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Project' => $setting->project_name,
+                    'X-API-KEY' => $setting->api_key,
+                ])
+                ->asMultipart()
+                ->post($url, ['id' => $order->waseet_order_id]);
+
+            $data = $response->json();
+
+            if ($response->successful() && ($data['status'] ?? false) === true) {
+                \App\Models\OrderStatusLog::create([
+                    'order_id' => $order->id,
+                    'status' => $order->status,
+                    'waseet_status' => 'إلغاء الطلب',
+                    'notes' => 'تم إرسال طلب إلغاء بنجاح لنظام الوسيط.',
+                ]);
+                return ['success' => true, 'message' => 'تم إرسال طلب الإلغاء للوسيط.'];
+            }
+
+            return ['success' => false, 'message' => $data['msg'] ?? 'فشل إرسال طلب الإلغاء. قد لا يدعم هذا الطلب الإلغاء حالياً.'];
+        } catch (\Exception $e) {
+            Log::error("Waseet Gateway Cancel Error: " . $e->getMessage());
+            return ['success' => false, 'message' => 'خطأ في الاتصال بالبوابة.'];
+        }
+    }
+
+    /**
      * Fetch full order details including history from Al-Waseet via Gateway.
      */
     public function getWaseetOrderDetails(string $waseetOrderId): array

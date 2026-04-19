@@ -371,5 +371,48 @@ class OrderService
 
         return $order->fresh();
     }
+
+    /**
+     * Update an order and its details.
+     */
+    public function updateOrder(Order $order, array $data): Order
+    {
+        if ($order->status === OrderStatus::COMPLETED) {
+            throw new \Exception('لا يمكن تعديل طلب مكتمل.');
+        }
+
+        return DB::transaction(function () use ($order, $data) {
+            $order->update($data);
+
+            // Record edit in history
+            \App\Models\OrderStatusLog::create([
+                'order_id' => $order->id,
+                'status' => $order->status->value,
+                'waseet_status' => 'تعديل بيانات',
+                'notes' => 'تم تعديل بيانات الطلب من قبل الإدارة.',
+            ]);
+
+            return $order->fresh();
+        });
+    }
+
+    /**
+     * Delete an order and handle stock restoration.
+     */
+    public function deleteOrder(Order $order): bool
+    {
+        if ($order->status === OrderStatus::COMPLETED) {
+            throw new \Exception('لا يمكن حذف طلب مكتمل.');
+        }
+
+        return DB::transaction(function () use ($order) {
+            // Restore reserved quantities
+            foreach ($order->items as $item) {
+                $item->product->increment('available_quantity', $item->quantity);
+            }
+
+            return $order->delete();
+        });
+    }
 }
 
