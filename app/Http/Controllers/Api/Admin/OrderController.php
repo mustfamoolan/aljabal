@@ -249,4 +249,21 @@ class OrderController extends Controller
             ], 422);
         }
     }
+
+    /**
+     * Remove the specified order from storage.
+     */
+    public function destroy(Order $order): JsonResponse
+    {
+        try {
+            $this->orderService->deleteOrder($order);
+            return response()->json([
+                'message' => 'تم حذف الطلب بنجاح ونقض كافة العمليات المرتبطة به',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
 }
