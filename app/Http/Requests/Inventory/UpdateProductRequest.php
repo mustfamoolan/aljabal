@@ -54,7 +54,7 @@ class UpdateProductRequest extends FormRequest
             'short_description' => ['sometimes', 'nullable', 'string'],
             'long_description' => ['sometimes', 'nullable', 'string'],
             'video_url' => ['sometimes', 'nullable', 'url', 'max:500'],
-            'images' => ['sometimes', 'nullable', 'array', 'max:10'],
+            'images' => ['sometimes', 'nullable', 'array'],
             'images.*' => ['image', 'max:2048'],
             'tags' => ['sometimes', 'nullable', 'array'],
             'tags.*' => ['exists:tags,id'],
@@ -71,7 +71,6 @@ class UpdateProductRequest extends FormRequest
         return [
             'name.required' => 'اسم المنتج مطلوب',
             'sku.unique' => 'كود المنتج مستخدم بالفعل',
-            'images.max' => 'يمكن رفع 10 صور كحد أقصى',
             'images.*.image' => 'يجب أن تكون الملفات صور',
             'images.*.max' => 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت',
         ];
