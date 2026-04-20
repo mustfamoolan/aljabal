@@ -449,17 +449,18 @@ class OrderService
             $user = auth()->user();
 
             // 1. Restore Quantities
-            foreach ($order->orderItems as $item) {
+            foreach ($order->orderItems()->get() as $item) {
+                $product = $item->product;
+                if (!$product) continue;
+
                 // If it was completed, physical quantity was deducted
                 if ($status === OrderStatus::COMPLETED) {
-                    $item->product->increment('quantity', $item->quantity);
-                }
-                
-                // available_quantity was always reserved (decremented) during creation/item addition
-                // even in COMPLETED state, available_quantity remains decremented.
-                // UNLESS it was already cancelled/returned (but we handle active ones here).
-                if (!in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
-                    $item->product->increment('available_quantity', $item->quantity);
+                    // This will increment both quantity and available_quantity
+                    $product->updateQuantity($item->quantity, 'add');
+                } else if (!in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+                    // available_quantity was reserved (decremented) during creation
+                    // We only need to restore available_quantity for non-completed orders
+                    $product->increment('available_quantity', $item->quantity);
                 }
             }
 
