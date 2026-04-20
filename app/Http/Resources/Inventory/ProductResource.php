@@ -60,6 +60,7 @@ class ProductResource extends JsonResource
             'first_purchase_date' => $this->first_purchase_date?->toDateString(),
             'last_purchase_date' => $this->last_purchase_date?->toDateString(),
             'is_active' => $this->is_active,
+            'video_url' => $this->video_url,
             'is_low_stock' => $this->checkLowStock(),
             'images' => $this->whenLoaded('images', function () {
                 return $this->images->map(function ($image) {
