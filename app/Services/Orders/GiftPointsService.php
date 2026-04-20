@@ -79,6 +79,35 @@ class GiftPointsService
     }
 
     /**
+     * Reverse awarded points from the creator of the order
+     */
+    public function reversePoints(Order $order): bool
+    {
+        $points = $order->earned_gift_points ?? 0;
+
+        if ($points <= 0) {
+            return false;
+        }
+
+        // Deduct points from the respective creator (Representative or User)
+        if ($order->representative_id) {
+            $rep = Representative::find($order->representative_id);
+            if ($rep) {
+                $rep->total_gift_points = max(0, $rep->total_gift_points - $points);
+                return $rep->save();
+            }
+        } elseif ($order->created_by) {
+            $user = User::find($order->created_by);
+            if ($user) {
+                $user->total_gift_points = max(0, $user->total_gift_points - $points);
+                return $user->save();
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Get all active commission settings.
      */
     public function getSettings()

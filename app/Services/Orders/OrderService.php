@@ -439,20 +439,58 @@ class OrderService
     }
 
     /**
-     * Delete an order and handle stock restoration.
+     * Delete an order and handle stock restoration and financial reversal.
      */
     public function deleteOrder(Order $order): bool
     {
-        if ($order->status === OrderStatus::COMPLETED) {
-            throw new \Exception('لا يمكن حذف طلب مكتمل.');
-        }
-
         return DB::transaction(function () use ($order) {
-            // Restore reserved quantities
-            foreach ($order->items as $item) {
-                $item->product->increment('available_quantity', $item->quantity);
+            $status = $order->status;
+            $representative = $order->representative;
+            $user = auth()->user();
+
+            // 1. Restore Quantities
+            foreach ($order->orderItems as $item) {
+                // If it was completed, physical quantity was deducted
+                if ($status === OrderStatus::COMPLETED) {
+                    $item->product->increment('quantity', $item->quantity);
+                }
+                
+                // available_quantity was always reserved (decremented) during creation/item addition
+                // even in COMPLETED state, available_quantity remains decremented.
+                // UNLESS it was already cancelled/returned (but we handle active ones here).
+                if (!in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+                    $item->product->increment('available_quantity', $item->quantity);
+                }
             }
 
+            // 2. Reverse Financial Impact if COMPLETED
+            if ($status === OrderStatus::COMPLETED && $representative) {
+                if ($order->is_withdrawal_order) {
+                    // Re-add balance to representative (refunding their purchase)
+                    $this->accountService->addBalance(
+                        $representative,
+                        (float) $order->total_amount,
+                        'deposit', // Refunding balance
+                        "إعادة رصيد بسبب حذف طلب سحب #{$order->id}",
+                        $user
+                    );
+                } else {
+                    // Deduct the profit they gained
+                    if ($order->final_profit > 0) {
+                        $this->accountService->deductBalance(
+                            $representative,
+                            (float) $order->final_profit,
+                            "خصم أرباح بسبب حذف طلب مكتمل #{$order->id}",
+                            $user
+                        );
+                    }
+                }
+            }
+
+            // 3. Reverse Gift Points
+            $this->giftPointsService->reversePoints($order);
+
+            // 4. Delete Order
             return $order->delete();
         });
     }
