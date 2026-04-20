@@ -51,6 +51,7 @@ class OrderResource extends JsonResource
             'gift_box_name' => $this->giftBox?->name,
             'gift_box_price' => $this->giftBox?->box_price,
             'is_withdrawal_order' => (bool)$this->is_withdrawal_order,
+            'is_replacement' => (bool)$this->is_replacement,
             'order_items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
             'waseet_order_id' => $this->waseet_order_id,
             'waseet_tracking_url' => $this->waseet_tracking_url,
