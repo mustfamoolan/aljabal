@@ -448,30 +448,34 @@ class OrderService
             $representative = $order->representative;
             $user = auth()->user();
 
-            // 1. Restore Quantities
-            foreach ($order->orderItems()->get() as $item) {
-                $product = $item->product;
-                if (!$product) continue;
+            // 1. Get all items before doing anything
+            // We use direct DB query to be 100% sure we get data even if relations are finicky
+            $items = DB::table('order_items')->where('order_id', $order->id)->get();
 
-                // If it was completed, physical quantity was deducted
+            // 2. Restore Quantities
+            foreach ($items as $item) {
+                // Determine if we need to restore physical quantity (only if completed)
                 if ($status === OrderStatus::COMPLETED) {
-                    // This will increment both quantity and available_quantity
-                    $product->updateQuantity($item->quantity, 'add');
-                } else if (!in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
-                    // available_quantity was reserved (decremented) during creation
-                    // We only need to restore available_quantity for non-completed orders
-                    $product->increment('available_quantity', $item->quantity);
+                    // Restore physical stock
+                    DB::table('products')->where('id', $item->product_id)->increment('quantity', $item->quantity);
+                    // Restore available stock
+                    DB::table('products')->where('id', $item->product_id)->increment('available_quantity', $item->quantity);
+                } 
+                // Restore only available stock for active orders that are not cancelled or returned
+                // (because cancelled/returned orders already had their available_stock restored)
+                else if (!in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+                    DB::table('products')->where('id', $item->product_id)->increment('available_quantity', $item->quantity);
                 }
             }
 
-            // 2. Reverse Financial Impact if COMPLETED
+            // 3. Reverse Financial Impact if COMPLETED
             if ($status === OrderStatus::COMPLETED && $representative) {
                 if ($order->is_withdrawal_order) {
                     // Re-add balance to representative (refunding their purchase)
                     $this->accountService->addBalance(
                         $representative,
                         (float) $order->total_amount,
-                        'deposit', // Refunding balance
+                        'deposit',
                         "إعادة رصيد بسبب حذف طلب سحب #{$order->id}",
                         $user
                     );
@@ -488,10 +492,10 @@ class OrderService
                 }
             }
 
-            // 3. Reverse Gift Points
+            // 4. Reverse Gift Points
             $this->giftPointsService->reversePoints($order);
 
-            // 4. Delete Order
+            // 5. Delete Order (and items via cascade)
             return $order->delete();
         });
     }
