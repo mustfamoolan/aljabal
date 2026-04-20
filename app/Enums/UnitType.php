@@ -4,18 +4,14 @@ namespace App\Enums;
 
 enum UnitType: string
 {
-    case WEIGHT = 'weight';
-    case CARTON = 'carton';
-    case SET = 'set';
     case PIECE = 'piece';
+    case SET = 'set';
 
     public function label(): string
     {
         return match($this) {
-            self::WEIGHT => 'وزن',
-            self::CARTON => 'كارتون',
+            self::PIECE => 'قطعة',
             self::SET => 'مجموعة',
-            self::PIECE => 'قطعة / مفرد',
         };
     }
 }
