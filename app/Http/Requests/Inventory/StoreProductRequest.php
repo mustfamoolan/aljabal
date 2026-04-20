@@ -34,6 +34,7 @@ class StoreProductRequest extends FormRequest
             'supplier_id' => ['nullable', 'exists:suppliers,id'],
             'author' => ['nullable', 'string', 'max:255'],
             'publisher' => ['nullable', 'string', 'max:255'],
+            'translator' => ['nullable', 'string', 'max:255'],
             'purchase_price' => ['nullable', 'numeric', 'min:0'],
             'retail_price' => ['nullable', 'numeric', 'min:0'],
             'wholesale_price' => ['nullable', 'numeric', 'min:0'],
@@ -54,6 +55,7 @@ class StoreProductRequest extends FormRequest
             'video_url' => ['nullable', 'url', 'max:500'],
             'images' => ['nullable', 'array'],
             'images.*' => ['image', 'max:2048'],
+            'parts' => ['nullable', 'array'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['exists:tags,id'],
         ];

@@ -44,6 +44,8 @@ class Product extends Model
         'short_description',
         'long_description',
         'video_url',
+        'translator',
+        'parts',
         'first_purchase_date',
         'last_purchase_date',
         'is_active',
@@ -63,6 +65,7 @@ class Product extends Model
             'weight_value' => 'decimal:2',
             'first_purchase_date' => 'date',
             'last_purchase_date' => 'date',
+            'parts' => 'array',
             'is_active' => 'boolean',
         ];
     }

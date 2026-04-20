@@ -36,6 +36,7 @@ class UpdateProductRequest extends FormRequest
             'supplier_id' => ['sometimes', 'nullable', 'exists:suppliers,id'],
             'author' => ['sometimes', 'nullable', 'string', 'max:255'],
             'publisher' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'translator' => ['sometimes', 'nullable', 'string', 'max:255'],
             'purchase_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'retail_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'wholesale_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
@@ -56,6 +57,7 @@ class UpdateProductRequest extends FormRequest
             'video_url' => ['sometimes', 'nullable', 'url', 'max:500'],
             'images' => ['sometimes', 'nullable', 'array'],
             'images.*' => ['image', 'max:2048'],
+            'parts' => ['sometimes', 'nullable', 'array'],
             'tags' => ['sometimes', 'nullable', 'array'],
             'tags.*' => ['exists:tags,id'],
         ];
