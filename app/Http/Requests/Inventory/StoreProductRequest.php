@@ -18,6 +18,18 @@ class StoreProductRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        if ($this->has('parts') && is_string($this->parts)) {
+            $decoded = json_decode($this->parts, true);
+            if (is_array($decoded)) {
+                $this->merge([
+                    'parts' => $decoded
+                ]);
+            }
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
