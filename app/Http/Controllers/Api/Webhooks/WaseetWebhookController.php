@@ -27,8 +27,11 @@ class WaseetWebhookController extends Controller
         $order = \App\Models\Order::where('waseet_order_id', $waseetOrderId)->first();
 
         if (!$order) {
+            \Illuminate\Support\Facades\Log::warning("Order with Waseet ID {$waseetOrderId} NOT FOUND in database.");
             return response()->json(['message' => 'Order not found'], 404);
         }
+
+        \Illuminate\Support\Facades\Log::info("Processing status update for Order #{$order->id} (Waseet ID: {$waseetOrderId}): {$order->waseet_status} -> {$newWaseetStatus}");
 
         // Update Waseet Status field
         $order->update([
@@ -48,15 +51,20 @@ class WaseetWebhookController extends Controller
             $orderService = app(\App\Services\Orders\OrderService::class);
             $newInternalStatus = $this->mapWaseetToInternalStatus($newWaseetStatus);
 
+            \Illuminate\Support\Facades\Log::info("Mapping Waseet status '{$newWaseetStatus}' to Internal: " . ($newInternalStatus ? $newInternalStatus->name : 'NONE'));
+
             if ($newInternalStatus && $newInternalStatus !== $order->status) {
+                \Illuminate\Support\Facades\Log::info("Changing internal status for Order #{$order->id} to {$newInternalStatus->name}");
                 $orderService->changeOrderStatus($order, $newInternalStatus);
             } else {
-                // If internal status hasn't changed, still send the specific Waseet status notification
+                \Illuminate\Support\Facades\Log::info("No internal status change needed for Order #{$order->id}. Sending specific status notification.");
                 $notificationService = app(\App\Services\Notifications\NotificationService::class);
                 $notificationService->sendOrderStatusNotification($order, $oldWaseetStatus, $newWaseetStatus);
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to sync status for order {$order->id}: " . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error("Failed to sync status for order {$order->id}: " . $e->getMessage(), [
+                'exception' => $e
+            ]);
         }
 
         return response()->json([
