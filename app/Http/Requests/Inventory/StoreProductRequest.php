@@ -38,7 +38,7 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:products,name'],
             'sku' => ['nullable', 'string', 'unique:products,sku'],
             'is_original' => ['nullable', 'boolean'],
             'category_id' => ['nullable', 'exists:categories,id'],
@@ -82,6 +82,7 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name.required' => 'اسم المنتج مطلوب',
+            'name.unique' => 'هذا المنتج موجود مسبقاً في النظام',
             'sku.unique' => 'كود المنتج مستخدم بالفعل',
             'images.*.image' => 'يجب أن تكون الملفات صور',
             'images.*.max' => 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت',

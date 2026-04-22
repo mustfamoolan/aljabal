@@ -40,7 +40,7 @@ class UpdateProductRequest extends FormRequest
         $productId = $this->route('product')?->id ?? $this->product;
 
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('products', 'name')->ignore($productId)],
             'sku' => ['sometimes', 'nullable', 'string', Rule::unique('products', 'sku')->ignore($productId)],
             'is_original' => ['sometimes', 'nullable', 'boolean'],
             'category_id' => ['sometimes', 'nullable', 'exists:categories,id'],
@@ -84,6 +84,7 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name.required' => 'اسم المنتج مطلوب',
+            'name.unique' => 'هذا المنتج موجود مسبقاً في النظام',
             'sku.unique' => 'كود المنتج مستخدم بالفعل',
             'images.*.image' => 'يجب أن تكون الملفات صور',
             'images.*.max' => 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت',
