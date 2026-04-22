@@ -68,9 +68,13 @@ class TelegramWebhookController extends Controller
         // 2. Check if user is already logged in
         $rep = Representative::where('telegram_chat_id', $chatId)->first();
         if ($rep) {
-            // Already logged in, maybe show menu or info
-            $this->sendRepresentativeInfo($chatId, $rep);
-            return;
+            // Already logged in
+            $state = $this->getState($chatId);
+            if (!$state) {
+                // Treat text as book search
+                $this->handleBookSearch($chatId, $text);
+                return;
+            }
         }
 
         // 3. Process state-based inputs
@@ -145,6 +149,52 @@ class TelegramWebhookController extends Controller
         $message .= "▪️ <b>الرصيد المتاح:</b> " . number_format($rep->available_balance, 0) . " د.ع\n";
         
         $this->telegram->sendMessage($chatId, $message);
+    }
+
+    protected function handleBookSearch($chatId, $query)
+    {
+        $products = \App\Models\Product::where('is_active', true)
+            ->where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('author', 'like', "%{$query}%");
+            })
+            ->limit(3)
+            ->get();
+
+        if ($products->isEmpty()) {
+            $this->telegram->sendMessage($chatId, "لم يتم العثور على نتائج مطابقة لـ \"{$query}\". ❌");
+            return;
+        }
+
+        $this->telegram->sendMessage($chatId, "🔍 <b>نتائج البحث عن:</b> \"{$query}\"");
+
+        foreach ($products as $product) {
+            $message = "📖 <b>اسم الكتاب:</b> {$product->name}\n";
+            $message .= "📦 <b>الكمية المتوفرة:</b> {$product->available_quantity}\n";
+            $message .= "💰 <b>سعر مفرد:</b> " . number_format($product->retail_price, 0) . " د.ع\n";
+            $message .= "💼 <b>سعر جملة:</b> " . number_format($product->wholesale_price, 0) . " د.ع\n";
+            
+            if ($product->author) {
+                $message .= "✍️ <b>المؤلف:</b> {$product->author}\n";
+            }
+            if ($product->publisher) {
+                $message .= "🏢 <b>دار النشر:</b> {$product->publisher}\n";
+            }
+            
+            $desc = $product->long_description ?? $product->short_description;
+            if ($desc) {
+                $desc = \Illuminate\Support\Str::limit(strip_tags($desc), 150);
+                $message .= "📝 <b>الوصف:</b> {$desc}\n";
+            }
+
+            $imageUrl = $product->image_url;
+
+            if ($imageUrl) {
+                $this->telegram->sendPhoto($chatId, $imageUrl, $message);
+            } else {
+                $this->telegram->sendMessage($chatId, $message);
+            }
+        }
     }
 
     // State Helpers

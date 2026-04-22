@@ -52,6 +52,42 @@ class TelegramBotService
     }
 
     /**
+     * Send a photo to a specific chat ID.
+     */
+    public function sendPhoto(string|int $chatId, string $photoUrl, string $caption = '', array $replyMarkup = []): bool
+    {
+        if (empty($this->token)) {
+            Log::warning('Telegram bot token is not set.');
+            return false;
+        }
+
+        $payload = [
+            'chat_id' => $chatId,
+            'photo' => $photoUrl,
+            'caption' => $caption,
+            'parse_mode' => 'HTML',
+        ];
+
+        if (!empty($replyMarkup)) {
+            $payload['reply_markup'] = json_encode($replyMarkup);
+        }
+
+        try {
+            $response = Http::post("{$this->baseUrl}/sendPhoto", $payload);
+
+            if (!$response->successful()) {
+                Log::error('Telegram API Error (sendPhoto): ' . $response->body());
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Telegram Service Exception (sendPhoto): ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Set the Webhook URL for the bot.
      */
     public function setWebhook(string $url): array
