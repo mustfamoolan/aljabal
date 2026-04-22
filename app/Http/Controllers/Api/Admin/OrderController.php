@@ -189,6 +189,25 @@ class OrderController extends Controller
     }
 
     /**
+     * Manually trigger a sync of all active order statuses from Waseet.
+     */
+    public function syncActiveWaseetStatuses(): JsonResponse
+    {
+        try {
+            \Illuminate\Support\Facades\Artisan::call('waseet:sync-statuses');
+            return response()->json([
+                'status' => true,
+                'message' => 'تم استدعاء أمر مزامنة الحالات بنجاح. سيتم تحديث الطلبات التي تغيرت حالتها.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'حدث خطأ أثناء المزامنة: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Store a new order from admin/employee via API.
      */
     public function store(Request $request): JsonResponse

@@ -13,3 +13,6 @@ Artisan::command('inspire', function () {
 Schedule::command('model:prune', [
     '--model' => [Notification::class],
 ])->daily();
+
+// Sync missed order statuses from Waseet API periodically
+Schedule::command('waseet:sync-statuses')->everyThirtyMinutes();

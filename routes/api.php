@@ -139,6 +139,7 @@ Route::prefix('admin')->group(function () {
 
         // Orders routes
         Route::get('orders/statuses', [\App\Http\Controllers\Api\Admin\OrderController::class, 'waseetStatuses']);
+        Route::post('orders/sync-waseet-statuses', [\App\Http\Controllers\Api\Admin\OrderController::class, 'syncActiveWaseetStatuses']);
         Route::apiResource('orders', \App\Http\Controllers\Api\Admin\OrderController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
         Route::post('orders/{order}/status', [\App\Http\Controllers\Api\Admin\OrderController::class, 'updateStatus']);
         Route::post('orders/{order}/send-to-waseet', [\App\Http\Controllers\Api\Admin\OrderController::class, 'sendToWaseet']);
