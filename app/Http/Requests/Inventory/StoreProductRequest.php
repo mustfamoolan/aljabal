@@ -37,8 +37,17 @@ class StoreProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isOriginal = filter_var($this->input('is_original', false), FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:products,name'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('products', 'name')->where(function ($query) use ($isOriginal) {
+                    return $query->where('is_original', $isOriginal);
+                })
+            ],
             'sku' => ['nullable', 'string', 'unique:products,sku'],
             'is_original' => ['nullable', 'boolean'],
             'category_id' => ['nullable', 'exists:categories,id'],

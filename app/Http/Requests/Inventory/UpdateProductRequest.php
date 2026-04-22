@@ -37,10 +37,30 @@ class UpdateProductRequest extends FormRequest
      */
     public function rules(): array
     {
-        $productId = $this->route('product')?->id ?? $this->product;
+        $product = $this->route('product');
+        if ($product && !($product instanceof \App\Models\Product)) {
+            $product = \App\Models\Product::find($product);
+        }
+        $productId = $product?->id ?? $this->product;
+        
+        $isOriginalValue = $this->has('is_original') 
+            ? $this->input('is_original') 
+            : ($product ? $product->is_original : false);
+            
+        $isOriginal = filter_var($isOriginalValue, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
 
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('products', 'name')->ignore($productId)],
+            'name' => [
+                'sometimes', 
+                'required', 
+                'string', 
+                'max:255', 
+                Rule::unique('products', 'name')
+                    ->where(function ($query) use ($isOriginal) {
+                        return $query->where('is_original', $isOriginal);
+                    })
+                    ->ignore($productId)
+            ],
             'sku' => ['sometimes', 'nullable', 'string', Rule::unique('products', 'sku')->ignore($productId)],
             'is_original' => ['sometimes', 'nullable', 'boolean'],
             'category_id' => ['sometimes', 'nullable', 'exists:categories,id'],
