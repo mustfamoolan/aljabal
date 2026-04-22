@@ -299,7 +299,7 @@ class OrderService
             $oldStatus = $order->status->value;
 
             // Deduct from physical quantity on completion (already reserved from available_quantity)
-            foreach ($order->items as $item) {
+            foreach ($order->orderItems as $item) {
                 $item->product->decrement('quantity', $item->quantity);
             }
 
@@ -335,7 +335,7 @@ class OrderService
         // If order was COMPLETED and now changing to something else (cancellation/return)
         // We need to return physical quantity back
         if ($oldStatus === OrderStatus::COMPLETED && in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
-            foreach ($order->items as $item) {
+            foreach ($order->orderItems as $item) {
                 $item->product->increment('quantity', $item->quantity);
             }
         }
@@ -344,7 +344,7 @@ class OrderService
         // We always release reserved available_quantity
         if (in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED]) &&
             !in_array($oldStatus, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
-            foreach ($order->items as $item) {
+            foreach ($order->orderItems as $item) {
                 $item->product->increment('available_quantity', $item->quantity);
             }
         }
