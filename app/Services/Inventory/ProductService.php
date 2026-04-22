@@ -139,6 +139,11 @@ class ProductService
             $tagIds = $data['tags'] ?? [];
             unset($data['images'], $data['tags']);
 
+            // Ensure available_quantity is set if quantity is provided
+            if (isset($data['quantity']) && !isset($data['available_quantity'])) {
+                $data['available_quantity'] = $data['quantity'];
+            }
+
             // Create product
             $product = Product::create($data);
 
@@ -188,6 +193,13 @@ class ProductService
             $images = $data['images'] ?? null;
             $tagIds = $data['tags'] ?? null;
             unset($data['images'], $data['tags']);
+
+            // Sync available_quantity when quantity is updated directly
+            if (isset($data['quantity'])) {
+                $oldQuantity = $product->quantity ?? 0;
+                $difference = $data['quantity'] - $oldQuantity;
+                $data['available_quantity'] = max(0, ($product->available_quantity ?? 0) + $difference);
+            }
 
             // Update product
             $oldPrice = (float) $product->customer_price;
