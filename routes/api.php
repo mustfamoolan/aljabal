@@ -34,6 +34,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 // Waseet Webhooks (Directly from Gateway)
 Route::post('/webhooks/waseet-status', [\App\Http\Controllers\Api\Webhooks\WaseetWebhookController::class, 'handle']);
 
+// Telegram Webhook
+Route::post('/webhooks/telegram', [\App\Http\Controllers\Api\Webhooks\TelegramWebhookController::class, 'handle']);
+
 // Admin API Routes
 Route::prefix('admin')->group(function () {
     // Auth routes (no authentication required)

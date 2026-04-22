@@ -25,6 +25,7 @@ class Representative extends Authenticatable
         'address',
         'is_active',
         'fcm_token',
+        'telegram_chat_id',
         'balance',
     ];
 

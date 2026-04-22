@@ -45,4 +45,8 @@ return [
         'url' => env('GATEWAY_URL', 'https://salesflowi.cloud'),
     ],
 
+    'telegram-bot-api' => [
+        'token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
 ];
