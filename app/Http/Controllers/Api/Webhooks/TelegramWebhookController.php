@@ -90,7 +90,7 @@ class TelegramWebhookController extends Controller
             }
 
             if ($text === '📝 إنشاء طلب جديد') {
-                $template = "🛒 إنشاء طلب جديد:\n(انسخ هذه الرسالة، املأ الفراغات وأرسلها مجدداً)\n====================\n👤 الزبون: \n📞 الهاتف 1: \n📞 الهاتف 2: \n📱 صفحة الزبون: \n📍 المحافظة: \n🏘 المنطقة: \n🏠 العنوان: \n📝 ملاحظات: \n\n📚 الكتب:\n- اسم الكتاب الأول | الكمية: 1 | السعر: 15000\n- اسم الكتاب الثاني | الكمية: 2 | السعر: 10000\n";
+                $template = "🛒 إنشاء طلب جديد:\n(انسخ هذه الرسالة، املأ الفراغات وأرسلها مجدداً)\n====================\n👤 الزبون: \n📞 الهاتف 1: \n📞 الهاتف 2: \n📱 صفحة الزبون: \n📍 المحافظة: \n🏘 المنطقة: \n🏠 العنوان: \n📝 ملاحظات: \n🎁 التغليف: \n📦 صندوق الهدايا: \n\n📚 الكتب:\n- اسم الكتاب الأول | الكمية: 1 | السعر: 15000\n- اسم الكتاب الثاني | الكمية: 2 | السعر: 10000\n";
                 $this->telegram->sendMessage($chatId, $template);
                 return;
             }
@@ -241,6 +241,8 @@ class TelegramWebhookController extends Controller
         $message .= "🚚 <b>رقم الطلب (الوسيط):</b> <code>" . ($order->waseet_order_id ?? 'لا يوجد') . "</code>\n";
         $message .= "👤 <b>اسم الزبون:</b> <code>{$order->customer_name}</code>\n";
         $message .= "💰 <b>المبلغ الإجمالي:</b> <code>" . number_format($order->total_amount, 0) . " د.ع</code>\n";
+        $message .= "🎁 <b>التغليف:</b> " . ($order->gift ? $order->gift->name : 'لا يوجد') . "\n";
+        $message .= "📦 <b>صندوق الهدايا:</b> " . ($order->giftBox ? $order->giftBox->name : 'لا يوجد') . "\n";
         $message .= "📌 <b>حالة النظام:</b> " . ($order->status ? $order->status->label() : 'غير معروف') . "\n";
         $message .= "📍 <b>حالة التوصيل:</b> " . ($order->waseet_status ?? 'غير متوفر') . "\n\n";
 
@@ -307,6 +309,8 @@ class TelegramWebhookController extends Controller
                 'districtName' => '🏘 المنطقة:',
                 'address' => '🏠 العنوان:',
                 'notes' => '📝 ملاحظات:',
+                'gift' => '🎁 التغليف:',
+                'gift_box' => '📦 صندوق الهدايا:',
             ];
 
             $data = [];
@@ -382,6 +386,18 @@ class TelegramWebhookController extends Controller
                 return;
             }
 
+            $giftId = null;
+            if ($data['gift']) {
+                $gift = \App\Models\GiftSetting::gifts()->where('name', 'like', "%{$data['gift']}%")->first();
+                $giftId = $gift?->id;
+            }
+
+            $giftBoxId = null;
+            if ($data['gift_box']) {
+                $giftBox = \App\Models\GiftSetting::giftBoxes()->where('name', 'like', "%{$data['gift_box']}%")->first();
+                $giftBoxId = $giftBox?->id;
+            }
+
             // Create Order
             $orderService = app(\App\Services\Orders\OrderService::class);
             $order = $orderService->createOrder([
@@ -393,6 +409,8 @@ class TelegramWebhookController extends Controller
                 'customer_notes' => $notes,
                 'governorate_id' => $gov->id,
                 'district_id' => $district->id,
+                'gift_id' => $giftId,
+                'gift_box_id' => $giftBoxId,
             ], $rep);
 
             foreach ($orderItemsData as $item) {

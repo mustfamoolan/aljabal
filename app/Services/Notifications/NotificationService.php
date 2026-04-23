@@ -327,6 +327,8 @@ class NotificationService
                             $message .= "🚚 <b>رقم الطلب (الوسيط):</b> <code>" . ($order->waseet_order_id ?? 'لا يوجد') . "</code>\n";
                             $message .= "👤 <b>اسم الزبون:</b> <code>{$order->customer_name}</code>\n";
                             $message .= "💰 <b>المبلغ الإجمالي:</b> <code>" . number_format($order->total_amount, 0) . " د.ع</code>\n";
+                            $message .= "🎁 <b>التغليف:</b> " . ($order->gift ? $order->gift->name : 'لا يوجد') . "\n";
+                            $message .= "📦 <b>صندوق الهدايا:</b> " . ($order->giftBox ? $order->giftBox->name : 'لا يوجد') . "\n";
                             
                             $oldEnum = \App\Enums\OrderStatus::tryFrom($oldStatus);
                             $oldLabel = $oldEnum ? $oldEnum->label() : $oldStatus;
