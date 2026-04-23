@@ -234,7 +234,8 @@ class TelegramWebhookController extends Controller
         $logs = $order->statusLogs;
         if ($logs->isNotEmpty()) {
             $message .= "⏳ <b>سجل الحالات الزمني:</b>\n";
-            foreach ($logs as $log) {
+            $sortedLogs = $logs->sortBy('created_at');
+            foreach ($sortedLogs as $log) {
                 $time = $log->created_at->format('Y-m-d h:i A');
                 
                 $statusText = $log->status;
