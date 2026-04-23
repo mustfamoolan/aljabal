@@ -453,18 +453,21 @@ class OrderService
             $items = DB::table('order_items')->where('order_id', $order->id)->get();
 
             // 2. Restore Quantities
-            foreach ($items as $item) {
-                // Determine if we need to restore physical quantity (only if completed)
+            // We use Eloquent to ensure any observers or global logic are triggered
+            foreach ($order->orderItems as $item) {
+                $product = $item->product;
+                if (!$product) continue;
+
+                // Determine restoration logic based on status
                 if ($status === OrderStatus::COMPLETED) {
-                    // Restore physical stock
-                    DB::table('products')->where('id', $item->product_id)->increment('quantity', $item->quantity);
-                    // Restore available stock
-                    DB::table('products')->where('id', $item->product_id)->increment('available_quantity', $item->quantity);
+                    // Completed orders had both physical and available stock deducted
+                    $product->increment('quantity', $item->quantity);
+                    $product->increment('available_quantity', $item->quantity);
                 } 
-                // Restore only available stock for active orders that are not cancelled or returned
-                // (because cancelled/returned orders already had their available_stock restored)
-                else if (!in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
-                    DB::table('products')->where('id', $item->product_id)->increment('available_quantity', $item->quantity);
+                // Restore available stock for all other active statuses (New, Prepared, etc.)
+                // EXCEPT Cancelled and Returned, because their stock was already restored when status changed
+                elseif ($status !== OrderStatus::CANCELLED && $status !== OrderStatus::RETURNED) {
+                    $product->increment('available_quantity', $item->quantity);
                 }
             }
 
