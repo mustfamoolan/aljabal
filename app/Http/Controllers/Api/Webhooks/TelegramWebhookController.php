@@ -21,14 +21,22 @@ class TelegramWebhookController extends Controller
 
     public function handle(Request $request)
     {
-        $update = $request->all();
+        try {
+            $update = $request->all();
+            Log::info('Telegram Webhook Update Received:', $update);
 
-        // Handle simple text messages
-        if (isset($update['message']['text'])) {
-            $chatId = $update['message']['chat']['id'];
-            $text = trim($update['message']['text']);
+            // Handle simple text messages
+            if (isset($update['message']['text'])) {
+                $chatId = $update['message']['chat']['id'];
+                $text = trim($update['message']['text']);
 
-            $this->processMessage($chatId, $text);
+                $this->processMessage($chatId, $text);
+            }
+        } catch (\Exception $e) {
+            Log::error('Telegram Webhook Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'update' => $request->all()
+            ]);
         }
 
         return response()->json(['status' => 'ok']);
@@ -315,7 +323,7 @@ class TelegramWebhookController extends Controller
 
             $data = [];
             foreach ($fields as $key => $label) {
-                if (preg_match('/' . preg_quote($label, '/') . '\s*([^\n\r👤📞📱📍🏘🏠📝📚]*)/u', $text, $matches)) {
+                if (preg_match('/' . preg_quote($label, '/') . '\s*([^\n\r👤📞📱📍🏘🏠📝📚🎁📦]*)/u', $text, $matches)) {
                     $data[$key] = trim($matches[1]) ?: null;
                 } else {
                     $data[$key] = null;

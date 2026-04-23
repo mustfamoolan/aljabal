@@ -330,16 +330,26 @@ class NotificationService
                             $message .= "🎁 <b>التغليف:</b> " . ($order->gift ? $order->gift->name : 'لا يوجد') . "\n";
                             $message .= "📦 <b>صندوق الهدايا:</b> " . ($order->giftBox ? $order->giftBox->name : 'لا يوجد') . "\n";
                             
-                            $oldEnum = \App\Enums\OrderStatus::tryFrom($oldStatus);
-                            $oldLabel = $oldEnum ? $oldEnum->label() : $oldStatus;
-                            
-                            $newEnum = \App\Enums\OrderStatus::tryFrom($newStatus);
-                            $newLabel = $newEnum ? $newEnum->label() : $newStatus;
+                            $oldLabel = $oldStatus;
+                            if ($oldStatus instanceof \App\Enums\OrderStatus) {
+                                $oldLabel = $oldStatus->label();
+                            } else {
+                                $oldEnum = \App\Enums\OrderStatus::tryFrom($oldStatus);
+                                if ($oldEnum) $oldLabel = $oldEnum->label();
+                            }
+
+                            $newLabel = $newStatus;
+                            if ($newStatus instanceof \App\Enums\OrderStatus) {
+                                $newLabel = $newStatus->label();
+                            } else {
+                                $newEnum = \App\Enums\OrderStatus::tryFrom($newStatus);
+                                if ($newEnum) $newLabel = $newEnum->label();
+                            }
 
                             $message .= "🔄 <b>تغيرت الحالة:</b>\n";
                             $message .= "من: <b>{$oldLabel}</b> ⬅️ إلى: <b>{$newLabel}</b>\n\n";
                             
-                            $logs = clone $order->statusLogs;
+                            $logs = $order->statusLogs()->get();
                             if ($logs->isNotEmpty()) {
                                 $message .= "⏳ <b>سجل الحالات الزمني:</b>\n";
                                 $sortedLogs = $logs->sortBy('created_at');
