@@ -90,7 +90,7 @@ class TelegramWebhookController extends Controller
             }
 
             if ($text === '📝 إنشاء طلب جديد') {
-                $template = "🛒 إنشاء طلب جديد:\n(انسخ هذه الرسالة، املأ الفراغات وأرسلها مجدداً)\n====================\n👤 الزبون: \n📞 الهاتف 1: \n📞 الهاتف 2: \n📱 صفحة الزبون: \n📍 المحافظة: \n🏠 العنوان: \n📝 ملاحظات: \n\n📚 الكتب:\n- اسم الكتاب الأول | الكمية: 1 | السعر: 15000\n- اسم الكتاب الثاني | الكمية: 2 | السعر: 10000\n";
+                $template = "🛒 إنشاء طلب جديد:\n(انسخ هذه الرسالة، املأ الفراغات وأرسلها مجدداً)\n====================\n👤 الزبون: \n📞 الهاتف 1: \n📞 الهاتف 2: \n📱 صفحة الزبون: \n📍 المحافظة: \n🏘 المنطقة: \n🏠 العنوان: \n📝 ملاحظات: \n\n📚 الكتب:\n- اسم الكتاب الأول | الكمية: 1 | السعر: 15000\n- اسم الكتاب الثاني | الكمية: 2 | السعر: 10000\n";
                 $this->telegram->sendMessage($chatId, $template);
                 return;
             }
@@ -303,17 +303,24 @@ class TelegramWebhookController extends Controller
             $phone2 = preg_match('/📞 الهاتف 2:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
             $social = preg_match('/📱 صفحة الزبون:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
             $govName = preg_match('/📍 المحافظة:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $districtName = preg_match('/🏘 المنطقة:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
             $address = preg_match('/🏠 العنوان:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
             $notes = preg_match('/📝 ملاحظات:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
 
-            if (empty($customerName) || empty($phone1) || empty($govName) || empty($address)) {
-                $this->telegram->sendMessage($chatId, "❌ خطأ: يرجى التأكد من ملء جميع الحقول الأساسية (الاسم، الهاتف 1، المحافظة، العنوان).");
+            if (empty($customerName) || empty($phone1) || empty($govName) || empty($districtName) || empty($address)) {
+                $this->telegram->sendMessage($chatId, "❌ خطأ: يرجى التأكد من ملء جميع الحقول الأساسية (الاسم، الهاتف 1، المحافظة، المنطقة، العنوان).");
                 return;
             }
 
             $gov = \App\Models\Governorate::where('name', 'like', "%{$govName}%")->first();
             if (!$gov) {
                 $this->telegram->sendMessage($chatId, "❌ خطأ: لم يتم التعرف على المحافظة ( {$govName} ). يرجى كتابة اسم المحافظة بشكل صحيح.");
+                return;
+            }
+
+            $district = \App\Models\District::where('name', 'like', "%{$districtName}%")->where('governorate_id', $gov->id)->first();
+            if (!$district) {
+                $this->telegram->sendMessage($chatId, "❌ خطأ: لم يتم التعرف على المنطقة ( {$districtName} ) ضمن محافظة {$govName}. يرجى التحقق من اسم المنطقة.");
                 return;
             }
 
@@ -365,6 +372,7 @@ class TelegramWebhookController extends Controller
                 'customer_address' => $address,
                 'customer_notes' => $notes,
                 'governorate_id' => $gov->id,
+                'district_id' => $district->id,
             ], $rep);
 
             foreach ($orderItemsData as $item) {
