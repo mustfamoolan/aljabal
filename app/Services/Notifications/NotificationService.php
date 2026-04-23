@@ -316,6 +316,21 @@ class NotificationService
                         'representative_id' => $representative->id,
                         'order_id' => $order->id,
                     ]);
+
+                    // Telegram Notification
+                    if ($representative->telegram_chat_id) {
+                        try {
+                            $telegramService = app(\App\Services\TelegramBotService::class);
+                            $msg = "🔔 <b>تحديث حالة الطلب!</b>\n\n";
+                            $msg .= "▪️ <b>الطلب رقم:</b> " . ($order->waseet_order_id ?? $order->id) . "\n";
+                            $msg .= "▪️ <b>الحالة السابقة:</b> {$oldStatus}\n";
+                            $msg .= "▪️ <b>الحالة الجديدة:</b> {$newStatus}";
+                            $telegramService->sendMessage($representative->telegram_chat_id, $msg);
+                        } catch (\Exception $e) {
+                            Log::error('Telegram notification error: ' . $e->getMessage());
+                        }
+                    }
+
                 } catch (\Exception $e) {
                     Log::error('Error sending order status notification to representative', [
                         'representative_id' => $order->representative_id,

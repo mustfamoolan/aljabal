@@ -36,16 +36,21 @@ class TelegramWebhookController extends Controller
 
     protected function processMessage($chatId, $text)
     {
-        // 1. Handle commands first
+        // 1. Check if user is already logged in
+        $rep = Representative::where('telegram_chat_id', $chatId)->first();
+
         if ($text === '/start') {
             $this->clearState($chatId);
-            $this->telegram->sendMessage($chatId, "مرحباً بك في بوت المندوبين 👋\nيرجى إدخال رقم هاتفك للبدء:");
-            $this->setState($chatId, 'awaiting_phone');
+            if ($rep) {
+                $this->sendMainMenu($chatId, "مرحباً مجدداً {$rep->name}! أنت مسجل دخول بالفعل. اختر من القائمة أدناه:");
+            } else {
+                $this->telegram->sendMessage($chatId, "مرحباً بك في بوت المندوبين 👋\nيرجى إدخال رقم هاتفك للبدء:");
+                $this->setState($chatId, 'awaiting_phone');
+            }
             return;
         }
 
         if ($text === '/info') {
-            $rep = Representative::where('telegram_chat_id', $chatId)->first();
             if ($rep) {
                 $this->sendRepresentativeInfo($chatId, $rep);
             } else {
@@ -54,8 +59,7 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        if ($text === '/logout') {
-            $rep = Representative::where('telegram_chat_id', $chatId)->first();
+        if ($text === '/logout' || $text === 'تسجيل خروج 🚪') {
             if ($rep) {
                 $rep->telegram_chat_id = null;
                 $rep->save();
@@ -65,16 +69,46 @@ class TelegramWebhookController extends Controller
             return;
         }
 
-        // 2. Check if user is already logged in
-        $rep = Representative::where('telegram_chat_id', $chatId)->first();
         if ($rep) {
-            // Already logged in
             $state = $this->getState($chatId);
-            if (!$state) {
-                // Treat text as book search
+
+            if ($text === 'استعلام عن طلب 📦') {
+                $this->setState($chatId, 'awaiting_order_search');
+                $this->telegram->sendMessage($chatId, "يرجى إرسال كود الوسيط أو رقم الطلب للاستعلام عنه:");
+                return;
+            }
+
+            if ($text === 'بحث عن كتاب 🔍') {
+                $this->setState($chatId, 'awaiting_book_search');
+                $this->telegram->sendMessage($chatId, "يرجى كتابة اسم الكتاب أو المؤلف للبحث عنه:");
+                return;
+            }
+
+            if ($text === 'معلومات حسابي 👤') {
+                $this->sendRepresentativeInfo($chatId, $rep);
+                return;
+            }
+
+            if ($state === 'awaiting_order_search') {
+                $this->handleOrderSearch($chatId, $rep->id, $text);
+                $this->clearState($chatId);
+                return;
+            }
+
+            if ($state === 'awaiting_book_search') {
+                $this->handleBookSearch($chatId, $text);
+                $this->clearState($chatId);
+                return;
+            }
+
+            if (!$state && !str_starts_with($text, '/')) {
+                // Default search
                 $this->handleBookSearch($chatId, $text);
                 return;
             }
+
+            $this->sendMainMenu($chatId, "الرجاء اختيار إحدى الخدمات من القائمة:");
+            return;
         }
 
         // 3. Process state-based inputs
@@ -91,9 +125,7 @@ class TelegramWebhookController extends Controller
 
     protected function handlePhoneInput($chatId, $phone)
     {
-        // Clean phone number if needed (remove spaces etc)
         $phone = preg_replace('/\s+/', '', $phone);
-
         $rep = Representative::where('phone', $phone)->first();
 
         if ($rep) {
@@ -124,16 +156,28 @@ class TelegramWebhookController extends Controller
         $rep = Representative::where('phone', $phone)->first();
 
         if ($rep && Hash::check($password, $rep->password)) {
-            // Success
             $rep->telegram_chat_id = $chatId;
             $rep->save();
 
             $this->clearState($chatId);
             $this->telegram->sendMessage($chatId, "✅ تم تسجيل الدخول بنجاح!");
-            $this->sendRepresentativeInfo($chatId, $rep);
+            $this->sendMainMenu($chatId, "أهلاً بك {$rep->name} 👋\nماذا ترغب أن تفعل الآن؟");
         } else {
             $this->telegram->sendMessage($chatId, "كلمة المرور غير صحيحة ❌\nالرجاء المحاولة مرة أخرى.");
         }
+    }
+
+    protected function sendMainMenu($chatId, $text)
+    {
+        $keyboard = [
+            'keyboard' => [
+                [['text' => 'استعلام عن طلب 📦'], ['text' => 'بحث عن كتاب 🔍']],
+                [['text' => 'معلومات حسابي 👤'], ['text' => 'تسجيل خروج 🚪']],
+            ],
+            'resize_keyboard' => true,
+            'one_time_keyboard' => false,
+        ];
+        $this->telegram->sendMessage($chatId, $text, $keyboard);
     }
 
     protected function sendRepresentativeInfo($chatId, Representative $rep)
@@ -148,6 +192,41 @@ class TelegramWebhookController extends Controller
         $message .= "▪️ <b>الطلبات المكتملة:</b> {$completedOrders}\n";
         $message .= "▪️ <b>الرصيد المتاح:</b> " . number_format($rep->available_balance, 0) . " د.ع\n";
         
+        $this->telegram->sendMessage($chatId, $message);
+    }
+
+    protected function handleOrderSearch($chatId, $representativeId, $query)
+    {
+        $order = \App\Models\Order::where('representative_id', $representativeId)
+            ->where(function ($q) use ($query) {
+                $q->where('id', $query)
+                  ->orWhere('waseet_order_id', $query)
+                  ->orWhere('waseet_tracking_url', 'like', "%{$query}%");
+            })
+            ->first();
+
+        if (!$order) {
+            $this->telegram->sendMessage($chatId, "لم يتم العثور على طلب بهذا الرقم، أو أنه لا يخصك. ❌");
+            return;
+        }
+
+        $message = "📦 <b>تفاصيل الطلب:</b>\n\n";
+        $message .= "▪️ <b>رقم الطلب (النظام):</b> {$order->id}\n";
+        $message .= "▪️ <b>رقم الطلب (الوسيط):</b> " . ($order->waseet_order_id ?? 'غير متوفر') . "\n";
+        $message .= "▪️ <b>اسم الزبون:</b> {$order->customer_name}\n";
+        $message .= "▪️ <b>المبلغ الإجمالي:</b> " . number_format($order->total_amount, 0) . " د.ع\n";
+        $message .= "▪️ <b>حالة الطلب (النظام):</b> " . ($order->status ? $order->status->label() : 'غير معروف') . "\n";
+        $message .= "▪️ <b>حالة الطلب (الوسيط):</b> " . ($order->waseet_status ?? 'غير معروف') . "\n\n";
+
+        $logs = $order->statusLogs;
+        if ($logs->isNotEmpty()) {
+            $message .= "⏳ <b>سجل الحالات:</b>\n";
+            foreach ($logs as $log) {
+                $time = $log->created_at->format('Y-m-d h:i A');
+                $message .= "- <b>{$log->status}</b> <i>({$time})</i>\n";
+            }
+        }
+
         $this->telegram->sendMessage($chatId, $message);
     }
 
