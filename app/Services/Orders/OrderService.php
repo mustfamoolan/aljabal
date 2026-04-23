@@ -464,20 +464,20 @@ class OrderService
             $items = DB::table('order_items')->where('order_id', $order->id)->get();
 
             // 2. Restore Quantities
-            // We use Eloquent to ensure any observers or global logic are triggered
+            $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
+            $returnedStatuses = [OrderStatus::CANCELLED, OrderStatus::RETURNED];
+
             foreach ($order->orderItems as $item) {
                 $product = $item->product;
                 if (!$product) continue;
 
-                // Determine restoration logic based on status
-                if ($status === OrderStatus::COMPLETED) {
-                    // Completed orders had both physical and available stock deducted
+                // Restore physical stock if it was deducted (Dispatched states)
+                if (in_array($status, $dispatchedStatuses)) {
                     $product->increment('quantity', $item->quantity);
-                    $product->increment('available_quantity', $item->quantity);
-                } 
-                // Restore available stock for all other active statuses (New, Prepared, etc.)
-                // EXCEPT Cancelled and Returned, because their stock was already restored when status changed
-                elseif ($status !== OrderStatus::CANCELLED && $status !== OrderStatus::RETURNED) {
+                }
+
+                // Restore available stock if it wasn't already restored (Active states)
+                if (!in_array($status, $returnedStatuses)) {
                     $product->increment('available_quantity', $item->quantity);
                 }
             }
