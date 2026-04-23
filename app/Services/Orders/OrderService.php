@@ -298,11 +298,9 @@ class OrderService
 
             $oldStatus = $order->status->value;
 
-            // Deduct from physical quantity on completion (already reserved from available_quantity)
-            foreach ($order->orderItems as $item) {
-                $item->product->decrement('quantity', $item->quantity);
-            }
-
+            // Physical quantity is now handled centrally in changeOrderStatus
+            // to support deduction at "PREPARED" stage as well.
+            
             // Update order status
             $order->update([
                 'status' => OrderStatus::COMPLETED,
@@ -331,21 +329,34 @@ class OrderService
         }
 
         $oldStatus = $order->status;
-        
-        // If order was COMPLETED and now changing to something else (cancellation/return)
-        // We need to return physical quantity back
-        if ($oldStatus === OrderStatus::COMPLETED && in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+        $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED];
+        $returnedStatuses = [OrderStatus::CANCELLED, OrderStatus::RETURNED];
+
+        // 1. Handle Physical Stock (quantity)
+        // If moving FROM a non-dispatched state TO a dispatched state -> DEDUCT physical stock
+        if (!in_array($oldStatus, $dispatchedStatuses) && in_array($status, $dispatchedStatuses)) {
+            foreach ($order->orderItems as $item) {
+                $item->product->decrement('quantity', $item->quantity);
+            }
+        }
+        // If moving FROM a dispatched state TO a returned/cancelled state -> RESTORE physical stock
+        elseif (in_array($oldStatus, $dispatchedStatuses) && in_array($status, $returnedStatuses)) {
             foreach ($order->orderItems as $item) {
                 $item->product->increment('quantity', $item->quantity);
             }
         }
 
-        // If order is being CANCELLED or RETURNED from a non-cancelled state
-        // We always release reserved available_quantity
-        if (in_array($status, [OrderStatus::CANCELLED, OrderStatus::RETURNED]) &&
-            !in_array($oldStatus, [OrderStatus::CANCELLED, OrderStatus::RETURNED])) {
+        // 2. Handle Available Stock (available_quantity)
+        // If moving FROM an active state TO a returned/cancelled state -> RESTORE available stock
+        if (in_array($status, $returnedStatuses) && !in_array($oldStatus, $returnedStatuses)) {
             foreach ($order->orderItems as $item) {
                 $item->product->increment('available_quantity', $item->quantity);
+            }
+        }
+        // If moving FROM a returned state BACK to an active state -> RE-DEDUCT available stock
+        elseif (!in_array($status, $returnedStatuses) && in_array($oldStatus, $returnedStatuses)) {
+            foreach ($order->orderItems as $item) {
+                $item->product->decrement('available_quantity', $item->quantity);
             }
         }
 
