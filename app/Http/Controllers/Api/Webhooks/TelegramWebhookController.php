@@ -169,22 +169,22 @@ class TelegramWebhookController extends Controller
         $this->telegram->sendMessage($chatId, "🔍 <b>نتائج البحث عن:</b> \"{$query}\"");
 
         foreach ($products as $product) {
-            $message = "📖 <b>اسم الكتاب:</b> <code>{$product->name}</code>\n";
-            $message .= "📦 <b>الكمية المتوفرة:</b> <code>{$product->available_quantity}</code>\n";
-            $message .= "💰 <b>سعر مفرد:</b> <code>" . number_format($product->retail_price, 0) . " د.ع</code>\n";
-            $message .= "💼 <b>سعر جملة:</b> <code>" . number_format($product->wholesale_price, 0) . " د.ع</code>\n";
+            $message = "📖 <b>اسم الكتاب:</b> {$product->name}\n";
+            $message .= "📦 <b>الكمية المتوفرة:</b> {$product->available_quantity}\n";
+            $message .= "💰 <b>سعر مفرد:</b> " . number_format($product->retail_price, 0) . " د.ع\n";
+            $message .= "💼 <b>سعر جملة:</b> " . number_format($product->wholesale_price, 0) . " د.ع\n";
             
             if ($product->author) {
-                $message .= "✍️ <b>المؤلف:</b> <code>{$product->author}</code>\n";
+                $message .= "✍️ <b>المؤلف:</b> {$product->author}\n";
             }
             if ($product->publisher) {
-                $message .= "🏢 <b>دار النشر:</b> <code>{$product->publisher}</code>\n";
+                $message .= "🏢 <b>دار النشر:</b> {$product->publisher}\n";
             }
             
             $desc = $product->long_description ?? $product->short_description;
             if ($desc) {
                 $desc = \Illuminate\Support\Str::limit(strip_tags($desc), 150);
-                $message .= "📝 <b>الوصف:</b>\n<code>{$desc}</code>\n";
+                $message .= "📝 <b>الوصف:</b>\n{$desc}\n";
             }
 
             $imageUrl = $product->image_url;
