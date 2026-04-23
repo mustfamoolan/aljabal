@@ -13,6 +13,7 @@ use App\Models\Representative;
 use App\Models\RepresentativeTransaction;
 use App\Models\User;
 use App\Services\Representatives\RepresentativeAccountService;
+use App\Services\GatewayIntegrationService;
 use Illuminate\Support\Facades\DB;
 
 class OrderService
@@ -20,7 +21,8 @@ class OrderService
     public function __construct(
         protected OrderCommissionService $commissionService,
         protected RepresentativeAccountService $accountService,
-        protected GiftPointsService $giftPointsService
+        protected GiftPointsService $giftPointsService,
+        protected GatewayIntegrationService $gatewayService
     ) {
     }
 
@@ -147,6 +149,12 @@ class OrderService
             // Reserve stock from available quantity
             $product->decrement('available_quantity', $quantity);
 
+            // Deduct physical stock if order is already dispatched
+            $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
+            if (in_array($order->status, $dispatchedStatuses)) {
+                $product->decrement('quantity', $quantity);
+            }
+
             $orderItem = OrderItem::create([
                 'order_id' => $order->id,
                 'product_id' => $product->id,
@@ -187,6 +195,12 @@ class OrderService
             // Adjust reserved stock
             if ($delta != 0) {
                 $product->decrement('available_quantity', $delta);
+                
+                // Adjust physical stock if order is already dispatched
+                $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
+                if (in_array($orderItem->order->status, $dispatchedStatuses)) {
+                    $product->decrement('quantity', $delta);
+                }
             }
 
             $orderItem->update([
@@ -214,6 +228,12 @@ class OrderService
             
             // Release reserved stock back to available quantity
             $orderItem->product->increment('available_quantity', $orderItem->quantity);
+
+            // Restore physical stock if order was already dispatched
+            $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
+            if (in_array($order->status, $dispatchedStatuses)) {
+                $orderItem->product->increment('quantity', $orderItem->quantity);
+            }
             
             $deleted = $orderItem->delete();
 
@@ -402,13 +422,17 @@ class OrderService
                 $this->syncItems($order, $data['items']);
             }
 
-            // Record edit in history
-            \App\Models\OrderStatusLog::create([
-                'order_id' => $order->id,
-                'status' => $order->status->value,
-                'waseet_status' => 'تعديل بيانات والمنتجات',
-                'notes' => 'تم تعديل بيانات الطلب والمنتجات من قبل الإدارة.',
-            ]);
+            // 3. Recalculate totals (already handled in syncItems, but for safety)
+            $this->calculateOrderTotals($order);
+
+            // 4. Synchronize with Al-Waseet if linked
+            if ($order->waseet_order_id) {
+                try {
+                    $this->gatewayService->updateOrderOnGateway($order->fresh());
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to sync order update with Waseet for #{$order->id}: " . $e->getMessage());
+                }
+            }
 
             return $order->fresh();
         });
