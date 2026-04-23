@@ -89,6 +89,12 @@ class TelegramWebhookController extends Controller
                 return;
             }
 
+            if ($text === '📝 إنشاء طلب جديد') {
+                $template = "🛒 إنشاء طلب جديد:\n(انسخ هذه الرسالة، املأ الفراغات وأرسلها مجدداً)\n====================\n👤 الزبون: \n📞 الهاتف 1: \n📞 الهاتف 2: \n📱 صفحة الزبون: \n📍 المحافظة: \n🏠 العنوان: \n📝 ملاحظات: \n\n📚 الكتب:\n- اسم الكتاب الأول | الكمية: 1 | السعر: 15000\n- اسم الكتاب الثاني | الكمية: 2 | السعر: 10000\n";
+                $this->telegram->sendMessage($chatId, $template);
+                return;
+            }
+
             if ($state === 'awaiting_order_search') {
                 $this->handleOrderSearch($chatId, $rep->id, $text);
                 $this->clearState($chatId);
@@ -102,6 +108,12 @@ class TelegramWebhookController extends Controller
             }
 
             if (!$state && !str_starts_with($text, '/')) {
+                // Check if text is a new order creation template
+                if (str_starts_with(trim($text), '🛒 إنشاء طلب جديد:')) {
+                    $this->handleOrderCreation($chatId, $rep, $text);
+                    return;
+                }
+
                 // Check if text is a forwarded order template
                 $phoneMatches = [];
                 $accountMatches = [];
@@ -184,8 +196,9 @@ class TelegramWebhookController extends Controller
     {
         $keyboard = [
             'keyboard' => [
-                [['text' => 'استعلام عن طلب 📦'], ['text' => 'بحث عن كتاب 🔍']],
-                [['text' => 'معلومات حسابي 👤'], ['text' => 'تسجيل خروج 🚪']],
+                [['text' => '📝 إنشاء طلب جديد'], ['text' => 'استعلام عن طلب 📦']],
+                [['text' => 'بحث عن كتاب 🔍'], ['text' => 'معلومات حسابي 👤']],
+                [['text' => 'تسجيل خروج 🚪']],
             ],
             'resize_keyboard' => true,
             'one_time_keyboard' => false,
@@ -280,6 +293,91 @@ class TelegramWebhookController extends Controller
 
         // Reuse the order details formatter
         $this->handleOrderSearch($chatId, $representativeId, $order->id);
+    }
+
+    protected function handleOrderCreation($chatId, Representative $rep, $text)
+    {
+        try {
+            $customerName = preg_match('/👤 الزبون:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $phone1 = preg_match('/📞 الهاتف 1:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $phone2 = preg_match('/📞 الهاتف 2:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $social = preg_match('/📱 صفحة الزبون:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $govName = preg_match('/📍 المحافظة:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $address = preg_match('/🏠 العنوان:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $notes = preg_match('/📝 ملاحظات:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+
+            if (empty($customerName) || empty($phone1) || empty($govName) || empty($address)) {
+                $this->telegram->sendMessage($chatId, "❌ خطأ: يرجى التأكد من ملء جميع الحقول الأساسية (الاسم، الهاتف 1، المحافظة، العنوان).");
+                return;
+            }
+
+            $gov = \App\Models\Governorate::where('name', 'like', "%{$govName}%")->first();
+            if (!$gov) {
+                $this->telegram->sendMessage($chatId, "❌ خطأ: لم يتم التعرف على المحافظة ( {$govName} ). يرجى كتابة اسم المحافظة بشكل صحيح.");
+                return;
+            }
+
+            $booksText = explode('📚 الكتب:', $text);
+            $booksLines = isset($booksText[1]) ? explode("\n", trim($booksText[1])) : [];
+            $orderItemsData = [];
+
+            foreach ($booksLines as $line) {
+                if (trim($line) === '' || str_starts_with(trim($line), 'اسم الكتاب')) continue;
+
+                if (preg_match('/-\s*(.*?)\s*\|\s*الكمية:\s*(\d+)\s*\|\s*السعر:\s*(\d+)/u', $line, $matches)) {
+                    $bookName = trim($matches[1]);
+                    $qty = (int)$matches[2];
+                    $price = (float)$matches[3];
+
+                    $product = \App\Models\Product::where('name', 'like', "%{$bookName}%")->where('is_active', true)->first();
+
+                    if (!$product) {
+                        $this->telegram->sendMessage($chatId, "❌ خطأ: لم يتم العثور على كتاب باسم ( {$bookName} ). يرجى البحث عنه باستخدام زر 'بحث عن كتاب' للتأكد من الاسم الصحيح.");
+                        return;
+                    }
+
+                    if ($product->available_quantity < $qty) {
+                        $this->telegram->sendMessage($chatId, "❌ خطأ: الكمية المطلوبة من كتاب ( {$bookName} ) غير متوفرة. المتوفر: {$product->available_quantity}");
+                        return;
+                    }
+
+                    $orderItemsData[] = [
+                        'product_id' => $product->id,
+                        'product' => $product,
+                        'quantity' => $qty,
+                        'customer_price' => $price,
+                    ];
+                }
+            }
+
+            if (empty($orderItemsData)) {
+                $this->telegram->sendMessage($chatId, "❌ خطأ: لم يتم إدخال أي كتب في الطلب، أو التنسيق غير صحيح. يرجى التأكد من الإبقاء على الفواصل ( | ) بين الاسم والكمية والسعر.");
+                return;
+            }
+
+            // Create Order
+            $orderService = app(\App\Services\Orders\OrderService::class);
+            $order = $orderService->createOrder([
+                'customer_name' => $customerName,
+                'customer_phone' => $phone1,
+                'customer_phone_2' => $phone2,
+                'customer_social_media' => $social,
+                'customer_address' => $address,
+                'customer_notes' => $notes,
+                'governorate_id' => $gov->id,
+            ], $rep);
+
+            foreach ($orderItemsData as $item) {
+                $orderService->addItemToOrder($order, $item['product'], $item['quantity'], $item['customer_price']);
+            }
+
+            $this->telegram->sendMessage($chatId, "✅ تم إنشاء الطلب بنجاح! يتم الآن عرض التفاصيل:");
+            $this->handleOrderSearch($chatId, $rep->id, $order->id);
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Order creation via Telegram failed: ' . $e->getMessage());
+            $this->telegram->sendMessage($chatId, "❌ حدث خطأ غير متوقع أثناء إنشاء الطلب. يرجى التأكد من صحة التنسيق أو التواصل مع الإدارة.");
+        }
     }
 
     protected function handleBookSearch($chatId, $query)
