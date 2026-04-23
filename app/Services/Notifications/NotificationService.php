@@ -321,11 +321,39 @@ class NotificationService
                     if ($representative->telegram_chat_id) {
                         try {
                             $telegramService = app(\App\Services\TelegramBotService::class);
-                            $msg = "🔔 <b>تحديث حالة الطلب!</b>\n\n";
-                            $msg .= "▪️ <b>الطلب رقم:</b> " . ($order->waseet_order_id ?? $order->id) . "\n";
-                            $msg .= "▪️ <b>الحالة السابقة:</b> {$oldStatus}\n";
-                            $msg .= "▪️ <b>الحالة الجديدة:</b> {$newStatus}";
-                            $telegramService->sendMessage($representative->telegram_chat_id, $msg);
+                            
+                            $message = "🔔 <b>إشعار تحديث حالة طلب!</b>\n\n";
+                            $message .= "🔖 <b>رقم الطلب (النظام):</b> <code>{$order->id}</code>\n";
+                            $message .= "🚚 <b>رقم الطلب (الوسيط):</b> <code>" . ($order->waseet_order_id ?? 'لا يوجد') . "</code>\n";
+                            $message .= "👤 <b>اسم الزبون:</b> <code>{$order->customer_name}</code>\n";
+                            $message .= "💰 <b>المبلغ الإجمالي:</b> <code>" . number_format($order->total_amount, 0) . " د.ع</code>\n";
+                            
+                            $oldEnum = \App\Enums\OrderStatus::tryFrom($oldStatus);
+                            $oldLabel = $oldEnum ? $oldEnum->label() : $oldStatus;
+                            
+                            $newEnum = \App\Enums\OrderStatus::tryFrom($newStatus);
+                            $newLabel = $newEnum ? $newEnum->label() : $newStatus;
+
+                            $message .= "🔄 <b>تغيرت الحالة:</b>\n";
+                            $message .= "من: <b>{$oldLabel}</b> ⬅️ إلى: <b>{$newLabel}</b>\n\n";
+                            
+                            $logs = clone $order->statusLogs;
+                            if ($logs->isNotEmpty()) {
+                                $message .= "⏳ <b>سجل الحالات الزمني:</b>\n";
+                                foreach ($logs as $log) {
+                                    $time = $log->created_at->format('Y-m-d h:i A');
+                                    
+                                    $statusText = $log->status;
+                                    $enumCase = \App\Enums\OrderStatus::tryFrom($statusText);
+                                    if ($enumCase) {
+                                        $statusText = $enumCase->label();
+                                    }
+
+                                    $message .= "🔸 {$statusText} <i>({$time})</i>\n";
+                                }
+                            }
+
+                            $telegramService->sendMessage($representative->telegram_chat_id, $message);
                         } catch (\Exception $e) {
                             Log::error('Telegram notification error: ' . $e->getMessage());
                         }

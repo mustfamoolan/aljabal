@@ -224,19 +224,26 @@ class TelegramWebhookController extends Controller
         }
 
         $message = "📦 <b>تفاصيل الطلب:</b>\n\n";
-        $message .= "▪️ <b>رقم الطلب (النظام):</b> {$order->id}\n";
-        $message .= "▪️ <b>رقم الطلب (الوسيط):</b> " . ($order->waseet_order_id ?? 'غير متوفر') . "\n";
-        $message .= "▪️ <b>اسم الزبون:</b> {$order->customer_name}\n";
-        $message .= "▪️ <b>المبلغ الإجمالي:</b> " . number_format($order->total_amount, 0) . " د.ع\n";
-        $message .= "▪️ <b>حالة الطلب (النظام):</b> " . ($order->status ? $order->status->label() : 'غير معروف') . "\n";
-        $message .= "▪️ <b>حالة الطلب (الوسيط):</b> " . ($order->waseet_status ?? 'غير معروف') . "\n\n";
+        $message .= "🔖 <b>رقم الطلب (النظام):</b> <code>{$order->id}</code>\n";
+        $message .= "🚚 <b>رقم الطلب (الوسيط):</b> <code>" . ($order->waseet_order_id ?? 'لا يوجد') . "</code>\n";
+        $message .= "👤 <b>اسم الزبون:</b> <code>{$order->customer_name}</code>\n";
+        $message .= "💰 <b>المبلغ الإجمالي:</b> <code>" . number_format($order->total_amount, 0) . " د.ع</code>\n";
+        $message .= "📌 <b>حالة النظام:</b> " . ($order->status ? $order->status->label() : 'غير معروف') . "\n";
+        $message .= "📍 <b>حالة التوصيل:</b> " . ($order->waseet_status ?? 'غير متوفر') . "\n\n";
 
         $logs = $order->statusLogs;
         if ($logs->isNotEmpty()) {
-            $message .= "⏳ <b>سجل الحالات:</b>\n";
+            $message .= "⏳ <b>سجل الحالات الزمني:</b>\n";
             foreach ($logs as $log) {
                 $time = $log->created_at->format('Y-m-d h:i A');
-                $message .= "- <b>{$log->status}</b> <i>({$time})</i>\n";
+                
+                $statusText = $log->status;
+                $enumCase = \App\Enums\OrderStatus::tryFrom($statusText);
+                if ($enumCase) {
+                    $statusText = $enumCase->label();
+                }
+
+                $message .= "🔸 {$statusText} <i>({$time})</i>\n";
             }
         }
 
