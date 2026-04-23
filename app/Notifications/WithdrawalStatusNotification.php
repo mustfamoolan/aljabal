@@ -8,6 +8,8 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
+use NotificationChannels\Fcm\Resources\AndroidConfig;
+use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class WithdrawalStatusNotification extends Notification
 {
@@ -43,6 +45,10 @@ class WithdrawalStatusNotification extends Notification
                 FcmNotification::create()
                     ->title($title)
                     ->body($body)
+            )
+            ->android(
+                AndroidConfig::create()
+                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
             );
     }
 

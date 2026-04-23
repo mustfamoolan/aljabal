@@ -8,6 +8,8 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
+use NotificationChannels\Fcm\Resources\AndroidConfig;
+use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class NewOrderNotification extends Notification
 {
@@ -47,6 +49,10 @@ class NewOrderNotification extends Notification
                 FcmNotification::create()
                     ->title('طلب جديد # ' . $this->order->id)
                     ->body("تم استلام طلب جديد من {$this->order->customer_name} بمبلغ " . number_format($this->order->total_amount) . " د.ع")
+            )
+            ->android(
+                AndroidConfig::create()
+                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
             );
     }
 

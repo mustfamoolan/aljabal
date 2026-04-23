@@ -7,6 +7,8 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
+use NotificationChannels\Fcm\Resources\AndroidConfig;
+use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class CustomAdminNotification extends Notification
 {
@@ -34,6 +36,10 @@ class CustomAdminNotification extends Notification
                 FcmNotification::create()
                     ->title($this->title)
                     ->body($this->body)
+            )
+            ->android(
+                AndroidConfig::create()
+                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
             );
 
         if (isset($this->data['image']) && !empty($this->data['image'])) {
