@@ -102,6 +102,19 @@ class TelegramWebhookController extends Controller
             }
 
             if (!$state && !str_starts_with($text, '/')) {
+                // Check if text is a forwarded order template
+                $phoneMatches = [];
+                $accountMatches = [];
+                $hasPhone = preg_match('/الرقم\s*:\s*([^\n\r]+)/ui', $text, $phoneMatches);
+                $hasAccount = preg_match('/اسم الحساب\s*:?\s*([^\n\r]+)/ui', $text, $accountMatches);
+
+                if ($hasPhone || $hasAccount) {
+                    $phone = $hasPhone ? trim($phoneMatches[1]) : null;
+                    $account = $hasAccount ? trim($accountMatches[1]) : null;
+                    $this->handleTemplateOrderSearch($chatId, $rep->id, $phone, $account);
+                    return;
+                }
+
                 // Default search
                 $this->handleBookSearch($chatId, $text);
                 return;
@@ -228,6 +241,37 @@ class TelegramWebhookController extends Controller
         }
 
         $this->telegram->sendMessage($chatId, $message);
+    }
+
+    protected function handleTemplateOrderSearch($chatId, $representativeId, $phone, $account)
+    {
+        $query = \App\Models\Order::where('representative_id', $representativeId);
+
+        if ($phone && $account) {
+            $query->where(function($q) use ($phone, $account) {
+                $q->where('customer_phone', 'like', "%{$phone}%")
+                  ->orWhere('customer_phone_2', 'like', "%{$phone}%")
+                  ->orWhere('customer_social_media', 'like', "%{$account}%");
+            });
+        } elseif ($phone) {
+            $query->where(function($q) use ($phone) {
+                $q->where('customer_phone', 'like', "%{$phone}%")
+                  ->orWhere('customer_phone_2', 'like', "%{$phone}%");
+            });
+        } elseif ($account) {
+            $query->where('customer_social_media', 'like', "%{$account}%");
+        }
+
+        // Get the latest order matching
+        $order = $query->orderBy('created_at', 'desc')->first();
+
+        if (!$order) {
+            $this->telegram->sendMessage($chatId, "لم يتم العثور على طلب مطابق لهذا الهاتف أو الحساب. ❌");
+            return;
+        }
+
+        // Reuse the order details formatter
+        $this->handleOrderSearch($chatId, $representativeId, $order->id);
     }
 
     protected function handleBookSearch($chatId, $query)
