@@ -298,14 +298,34 @@ class TelegramWebhookController extends Controller
     protected function handleOrderCreation($chatId, Representative $rep, $text)
     {
         try {
-            $customerName = preg_match('/👤 الزبون:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $phone1 = preg_match('/📞 الهاتف 1:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $phone2 = preg_match('/📞 الهاتف 2:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $social = preg_match('/📱 صفحة الزبون:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $govName = preg_match('/📍 المحافظة:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $districtName = preg_match('/🏘 المنطقة:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $address = preg_match('/🏠 العنوان:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
-            $notes = preg_match('/📝 ملاحظات:\s*([^\n]+)/u', $text, $matches) ? trim($matches[1]) : null;
+            $fields = [
+                'customer_name' => '👤 الزبون:',
+                'phone1' => '📞 الهاتف 1:',
+                'phone2' => '📞 الهاتف 2:',
+                'social' => '📱 صفحة الزبون:',
+                'govName' => '📍 المحافظة:',
+                'districtName' => '🏘 المنطقة:',
+                'address' => '🏠 العنوان:',
+                'notes' => '📝 ملاحظات:',
+            ];
+
+            $data = [];
+            foreach ($fields as $key => $label) {
+                if (preg_match('/' . preg_quote($label, '/') . '\s*([^\n\r👤📞📱📍🏘🏠📝📚]*)/u', $text, $matches)) {
+                    $data[$key] = trim($matches[1]) ?: null;
+                } else {
+                    $data[$key] = null;
+                }
+            }
+
+            $customerName = $data['customer_name'];
+            $phone1 = $data['phone1'];
+            $phone2 = $data['phone2'];
+            $social = $data['social'];
+            $govName = $data['govName'];
+            $districtName = $data['districtName'];
+            $address = $data['address'];
+            $notes = $data['notes'];
 
             if (empty($customerName) || empty($phone1) || empty($govName) || empty($districtName) || empty($address)) {
                 $this->telegram->sendMessage($chatId, "❌ خطأ: يرجى التأكد من ملء جميع الحقول الأساسية (الاسم، الهاتف 1، المحافظة، المنطقة، العنوان).");
