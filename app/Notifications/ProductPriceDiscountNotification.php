@@ -8,8 +8,6 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
-use NotificationChannels\Fcm\Resources\AndroidConfig;
-use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class ProductPriceDiscountNotification extends Notification
 {
@@ -42,10 +40,11 @@ class ProductPriceDiscountNotification extends Notification
                     ->body("تم تخفيض السعر من " . number_format($this->oldPrice) . " إلى " . number_format($this->newPrice) . " د.ع")
                     ->image($this->product->image_url)
             )
-            ->android(
-                AndroidConfig::create()
-                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
-            );
+            ->android([
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+            ]);
     }
 
     public function toArray(object $notifiable): array

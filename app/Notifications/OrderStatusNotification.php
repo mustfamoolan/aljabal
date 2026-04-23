@@ -8,8 +8,6 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
-use NotificationChannels\Fcm\Resources\AndroidConfig;
-use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class OrderStatusNotification extends Notification
 {
@@ -52,10 +50,11 @@ class OrderStatusNotification extends Notification
                     ->title('تحديث حالة الطلب # ' . $this->order->id)
                     ->body("تغيرت حالة الطلب من {$this->oldStatus} إلى {$this->newStatus}")
             )
-            ->android(
-                AndroidConfig::create()
-                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
-            );
+            ->android([
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+            ]);
     }
 
     /**

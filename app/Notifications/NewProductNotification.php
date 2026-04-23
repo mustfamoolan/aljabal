@@ -8,8 +8,6 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
-use NotificationChannels\Fcm\Resources\AndroidConfig;
-use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class NewProductNotification extends Notification
 {
@@ -39,10 +37,11 @@ class NewProductNotification extends Notification
                     ->body("تمت إضافة منتج جديد للمخزن: {$this->product->name}")
                     ->image($this->product->image_url)
             )
-            ->android(
-                AndroidConfig::create()
-                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
-            );
+            ->android([
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+            ]);
     }
 
     public function toArray(object $notifiable): array

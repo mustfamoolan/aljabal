@@ -8,8 +8,6 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
-use NotificationChannels\Fcm\Resources\AndroidConfig;
-use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class LowStockNotification extends Notification
 {
@@ -53,9 +51,10 @@ class LowStockNotification extends Notification
                     ->title('تنبيه: مخزون منخفض')
                     ->body("المنتج {$this->product->name} وصل للحد الأدنى. الكمية: {$this->product->quantity}")
             )
-            ->android(
-                AndroidConfig::create()
-                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
-            );
+            ->android([
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+            ]);
     }
 }

@@ -8,8 +8,6 @@ use Illuminate\Notifications\Notification;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
-use NotificationChannels\Fcm\Resources\AndroidConfig;
-use NotificationChannels\Fcm\Resources\AndroidNotification;
 
 class CommissionUpdateNotification extends Notification
 {
@@ -39,10 +37,11 @@ class CommissionUpdateNotification extends Notification
                     ->title('تحديث عمولة التجهيز')
                     ->body("تم تغيير قيمة عمولة التجهيز إلى " . number_format($this->setting->commission_value) . " د.ع")
             )
-            ->android(
-                AndroidConfig::create()
-                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
-            );
+            ->android([
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+            ]);
     }
 
     public function toArray(object $notifiable): array

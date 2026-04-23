@@ -53,10 +53,11 @@ class WithdrawalRequestNotification extends Notification
                     ->title($title)
                     ->body($body)
             )
-            ->android(
-                AndroidConfig::create()
-                    ->notification(AndroidNotification::create()->setChannelId('high_importance_channel'))
-            );
+            ->android([
+                'notification' => [
+                    'channel_id' => 'high_importance_channel',
+                ],
+            ]);
     }
 
     /**
