@@ -415,14 +415,30 @@ class OrderService
         }
 
         return DB::transaction(function () use ($order, $data) {
+            // Update basic fields
             $order->update($data);
+
+            // Recalculate delivery fee if governorate changed
+            if (isset($data['governorate_id'])) {
+                $order->delivery_fee = $this->calculateDeliveryFee((int)$data['governorate_id']);
+            }
+
+            // Recalculate gift prices if gift selection changed
+            if (isset($data['gift_id']) || isset($data['gift_box_id'])) {
+                $order->gift_price = $this->calculateGiftPrice(
+                    isset($data['gift_id']) ? (int)$data['gift_id'] : $order->gift_id,
+                    isset($data['gift_box_id']) ? (int)$data['gift_box_id'] : $order->gift_box_id
+                );
+            }
+            
+            $order->save();
 
             // Sync items if provided
             if (isset($data['items']) && is_array($data['items'])) {
                 $this->syncItems($order, $data['items']);
             }
 
-            // 3. Recalculate totals (already handled in syncItems, but for safety)
+            // 3. Recalculate totals (Ensures everything is fresh)
             $this->calculateOrderTotals($order);
 
             // 4. Synchronize with Al-Waseet if linked
