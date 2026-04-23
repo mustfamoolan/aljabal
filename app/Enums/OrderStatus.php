@@ -10,6 +10,7 @@ enum OrderStatus: string
     case CANCELLED = 'cancelled';
     case RETURNED = 'returned';
     case REPLACED = 'replaced';
+    case PICKED_UP = 'picked_up';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum OrderStatus: string
             self::CANCELLED => 'ملغي',
             self::RETURNED => 'راجع',
             self::REPLACED => 'استبدال',
+            self::PICKED_UP => 'تم الاستلام من قبل المندوب',
         };
     }
 
@@ -32,12 +34,13 @@ enum OrderStatus: string
             self::CANCELLED => 'bg-danger',
             self::RETURNED => 'bg-secondary',
             self::REPLACED => 'bg-primary',
+            self::PICKED_UP => 'bg-dark',
         };
     }
 
     public function canBeCompleted(): bool
     {
-        return in_array($this, [self::NEW, self::PREPARED]);
+        return in_array($this, [self::NEW, self::PREPARED, self::PICKED_UP]);
     }
 
     public function canBeCancelled(): bool

@@ -79,10 +79,11 @@ class WaseetWebhookController extends Controller
     protected function mapWaseetToInternalStatus(string $waseetStatus): ?\App\Enums\OrderStatus
     {
         return match ($waseetStatus) {
+            'قيد المعالجة', 'تم التجهيز' => \App\Enums\OrderStatus::PREPARED,
+            'تم الاستلام من قبل المندوب' => \App\Enums\OrderStatus::PICKED_UP,
             'واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون' => \App\Enums\OrderStatus::COMPLETED,
             'راجع', 'تم استلام الراجع', 'إيداع راجع' => \App\Enums\OrderStatus::RETURNED,
             'ملغي' => \App\Enums\OrderStatus::CANCELLED,
-            'قيد المعالجة', 'تم التجهيز', 'تم الاستلام من قبل المندوب' => \App\Enums\OrderStatus::PREPARED,
             default => null,
         };
     }

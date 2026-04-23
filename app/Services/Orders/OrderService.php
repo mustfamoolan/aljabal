@@ -329,7 +329,7 @@ class OrderService
         }
 
         $oldStatus = $order->status;
-        $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED];
+        $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
         $returnedStatuses = [OrderStatus::CANCELLED, OrderStatus::RETURNED];
 
         // 1. Handle Physical Stock (quantity)

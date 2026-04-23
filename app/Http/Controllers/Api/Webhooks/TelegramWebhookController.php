@@ -427,7 +427,7 @@ class TelegramWebhookController extends Controller
 
         foreach ($products as $product) {
             $message = "📖 <b>اسم الكتاب:</b> {$product->name}\n";
-            $message .= "📦 <b>الكمية المتوفرة:</b> {$product->available_quantity}\n";
+            $message .= "📦 <b>الكمية المتوفرة:</b> {$product->quantity}\n";
             $message .= "💰 <b>سعر مفرد:</b> " . number_format($product->retail_price, 0) . " د.ع\n";
             $message .= "💼 <b>سعر جملة:</b> " . number_format($product->wholesale_price, 0) . " د.ع\n";
             
