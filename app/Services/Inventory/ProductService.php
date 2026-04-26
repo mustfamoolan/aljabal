@@ -223,6 +223,16 @@ class ProductService
                 $this->uploadImages($product, $images);
             }
 
+            // Delete specific images if provided
+            if (isset($data['deleted_images']) && is_array($data['deleted_images'])) {
+                foreach ($data['deleted_images'] as $imageId) {
+                    $image = $product->images()->find($imageId);
+                    if ($image) {
+                        $this->deleteImage($image);
+                    }
+                }
+            }
+
             // Sync tags if provided
             if ($tagIds !== null) {
                 $product->tags()->sync($tagIds);
