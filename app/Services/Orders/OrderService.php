@@ -336,11 +336,17 @@ class OrderService
      */
     public function updateOrder(Order $order, array $data): Order
     {
-        if ($order->status === OrderStatus::SENT_TO_GATEWAY) {
-            throw new \Exception('لا يمكن تعديل طلب تم إرساله للوسيط بالفعل.');
+        $finalWaseetStatuses = ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون', 'راجع', 'تم استلام الراجع', 'إيداع راجع', 'تم الارجاع الى التاجر', 'ملغي'];
+        
+        if ($order->status === OrderStatus::SENT_TO_GATEWAY && in_array($order->waseet_status, $finalWaseetStatuses)) {
+            throw new \Exception('لا يمكن تعديل طلب تم تسليمه أو إلغاؤه في شركة التوصيل.');
         }
 
         return DB::transaction(function () use ($order, $data) {
+            $oldProfit = (float) $order->fresh()->final_profit;
+            $oldTotal = (float) $order->fresh()->total_amount;
+            $isSent = $order->status === OrderStatus::SENT_TO_GATEWAY;
+
             // Update basic fields
             $order->update($data);
 
@@ -364,10 +370,37 @@ class OrderService
                 $this->syncItems($order, $data['items']);
             }
 
-            // 3. Recalculate totals (Ensures everything is fresh)
+            // 3. Recalculate totals
             $this->calculateOrderTotals($order);
 
-            // 4. Synchronize with Al-Waseet if linked
+            // 4. Adjust Finances if already sent to gateway
+            if ($isSent && $order->representative) {
+                $order->refresh();
+                $newProfit = (float) $order->final_profit;
+                $newTotal = (float) $order->total_amount;
+
+                if ($order->is_withdrawal_order) {
+                    $delta = $newTotal - $oldTotal;
+                    if ($delta != 0) {
+                        if ($delta > 0) {
+                            $this->accountService->deductBalance($order->representative, abs($delta), "تعديل طلب سحب #{$order->id} (زيادة المبلغ)", auth()->user());
+                        } else {
+                            $this->accountService->addBalance($order->representative, abs($delta), TransactionType::DEPOSIT->value, "تعديل طلب سحب #{$order->id} (تقليل المبلغ)", auth()->user());
+                        }
+                    }
+                } else {
+                    $delta = $newProfit - $oldProfit;
+                    if ($delta != 0) {
+                        if ($delta > 0) {
+                            $this->accountService->addBalance($order->representative, abs($delta), TransactionType::COMMISSION->value, "تعديل أرباح طلب #{$order->id}", auth()->user());
+                        } else {
+                            $this->accountService->deductBalance($order->representative, abs($delta), "تعديل أرباح طلب #{$order->id} (خصم فرق الربح)", auth()->user());
+                        }
+                    }
+                }
+            }
+
+            // 5. Synchronize with Al-Waseet if linked
             if ($order->waseet_order_id) {
                 try {
                     $this->gatewayService->updateOrderOnGateway($order->fresh());
@@ -376,7 +409,7 @@ class OrderService
                 }
             }
 
-            // 5. Send Notification
+            // 6. Send Notification
             try {
                 app(\App\Services\Notifications\NotificationService::class)->sendOrderUpdatedNotification($order);
             } catch (\Exception $e) {
