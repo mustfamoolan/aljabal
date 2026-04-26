@@ -346,22 +346,18 @@ class NotificationService
                                 if ($newEnum) $newLabel = $newEnum->label();
                             }
 
-                            $message .= "🔄 <b>تغيرت الحالة:</b>\n";
-                            $message .= "من: <b>{$oldLabel}</b> ⬅️ إلى: <b>{$newLabel}</b>\n\n";
+                            $message .= "🔄 <b>تحديث الحالة:</b> <b>{$newLabel}</b>\n";
+                            if ($order->waseet_status) {
+                                $message .= "📡 <b>حالة الوسيط (Waseet):</b> <code>{$order->waseet_status}</code>\n";
+                            }
+                            $message .= "\n";
                             
-                            $logs = $order->statusLogs()->get();
+                            $logs = $order->statusLogs()->orderBy('created_at', 'desc')->take(5)->get();
                             if ($logs->isNotEmpty()) {
-                                $message .= "⏳ <b>سجل الحالات الزمني:</b>\n";
-                                $sortedLogs = $logs->sortBy('created_at');
-                                foreach ($sortedLogs as $log) {
+                                $message .= "⏳ <b>آخر التحديثات:</b>\n";
+                                foreach ($logs as $log) {
                                     $time = $log->created_at->format('Y-m-d h:i A');
-                                    
-                                    $statusText = $log->status;
-                                    $enumCase = \App\Enums\OrderStatus::tryFrom($statusText);
-                                    if ($enumCase) {
-                                        $statusText = $enumCase->label();
-                                    }
-
+                                    $statusText = $log->waseet_status ?: (\App\Enums\OrderStatus::tryFrom($log->status)?->label() ?? $log->status);
                                     $message .= "🔸 {$statusText} <i>({$time})</i>\n";
                                 }
                             }

@@ -13,9 +13,10 @@ class ReportController extends Controller
         $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
 
         // 1. Basic Stats (Completed Orders only)
-        $ordersQuery = \App\Models\Order::where('status', \App\Enums\OrderStatus::COMPLETED)
-            ->whereDate('completed_at', '>=', $startDate)
-            ->whereDate('completed_at', '<=', $endDate);
+        $ordersQuery = \App\Models\Order::where('status', \App\Enums\OrderStatus::SENT_TO_GATEWAY)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('updated_at', '>=', $startDate)
+            ->whereDate('updated_at', '<=', $endDate);
 
         $totalRevenue = (float) $ordersQuery->sum('total_amount');
         $totalGrossProfit = (float) $ordersQuery->sum('final_profit');
@@ -31,9 +32,10 @@ class ReportController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('categories as parents', 'categories.parent_id', '=', 'parents.id')
-            ->where('orders.status', \App\Enums\OrderStatus::COMPLETED)
-            ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->where('orders.status', \App\Enums\OrderStatus::SENT_TO_GATEWAY)
+            ->whereIn('orders.waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('orders.updated_at', '>=', $startDate)
+            ->whereDate('orders.updated_at', '<=', $endDate)
             ->selectRaw('COALESCE(parents.name, categories.name) as section_name, SUM(order_items.profit_subtotal) as profit')
             ->groupBy('section_name')
             ->get();
@@ -42,17 +44,19 @@ class ReportController extends Controller
         $branchProfits = \App\Models\OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->where('orders.status', \App\Enums\OrderStatus::COMPLETED)
-            ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->where('orders.status', \App\Enums\OrderStatus::SENT_TO_GATEWAY)
+            ->whereIn('orders.waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('orders.updated_at', '>=', $startDate)
+            ->whereDate('orders.updated_at', '<=', $endDate)
             ->selectRaw('categories.name as branch_name, SUM(order_items.profit_subtotal) as profit')
             ->groupBy('branch_name')
             ->get();
 
         // 4. Rep Performance
-        $repPerformance = \App\Models\Order::where('status', \App\Enums\OrderStatus::COMPLETED)
-            ->whereDate('completed_at', '>=', $startDate)
-            ->whereDate('completed_at', '<=', $endDate)
+        $repPerformance = \App\Models\Order::where('status', \App\Enums\OrderStatus::SENT_TO_GATEWAY)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('updated_at', '>=', $startDate)
+            ->whereDate('updated_at', '<=', $endDate)
             ->with([
                 'representative' => function ($q) {
                     $q->select('id', 'name');

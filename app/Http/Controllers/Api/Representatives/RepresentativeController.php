@@ -75,10 +75,16 @@ class RepresentativeController extends Controller
         $this->authorize('representatives.view');
 
         $totalOrders = $representative->orders()->count();
-        $completedOrdersCount = $representative->orders()->where('status', OrderStatus::COMPLETED->value)->count();
+        $completedOrdersCount = $representative->orders()
+            ->where('status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->count();
         $completionRate = $totalOrders > 0 ? round(($completedOrdersCount / $totalOrders) * 100, 2) : 0;
 
-        $totalSales = $representative->orders()->where('status', OrderStatus::COMPLETED->value)->sum('total_amount');
+        $totalSales = $representative->orders()
+            ->where('status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->sum('total_amount');
 
         $transactions = $representative->transactions()
             ->with(['creator:id,name', 'approver:id,name'])

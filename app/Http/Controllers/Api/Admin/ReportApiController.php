@@ -43,9 +43,10 @@ class ReportApiController extends Controller
 
         // ─── 1. Summary ──────────────────────────────────────────────────────
         $ordersBase = DB::table('orders')
-            ->where('status', OrderStatus::COMPLETED->value)
-            ->whereDate('completed_at', '>=', $startDate)
-            ->whereDate('completed_at', '<=', $endDate);
+            ->where('status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('updated_at', '>=', $startDate)
+            ->whereDate('updated_at', '<=', $endDate);
 
         if ($repId) {
             $ordersBase->where('representative_id', $repId);
@@ -78,9 +79,10 @@ class ReportApiController extends Controller
         $topAuthors = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->where('orders.status', OrderStatus::COMPLETED->value)
-            ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->where('orders.status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('orders.waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('orders.updated_at', '>=', $startDate)
+            ->whereDate('orders.updated_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->whereNotNull('products.author')
             ->where('products.author', '!=', '')
@@ -99,9 +101,10 @@ class ReportApiController extends Controller
         $topPublishers = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->where('orders.status', OrderStatus::COMPLETED->value)
-            ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->where('orders.status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('orders.waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('orders.updated_at', '>=', $startDate)
+            ->whereDate('orders.updated_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->whereNotNull('products.publisher')
             ->where('products.publisher', '!=', '')
@@ -122,9 +125,10 @@ class ReportApiController extends Controller
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
             ->leftJoin('categories as parents', 'categories.parent_id', '=', 'parents.id')
-            ->where('orders.status', OrderStatus::COMPLETED->value)
-            ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->where('orders.status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('orders.waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('orders.updated_at', '>=', $startDate)
+            ->whereDate('orders.updated_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->selectRaw('COALESCE(parents.name, categories.name) as section_name, SUM(order_items.profit_subtotal) as profit')
             ->groupBy('section_name')
@@ -134,9 +138,10 @@ class ReportApiController extends Controller
         // ─── 9. Rep Performance ────────────────────────────────────────────────
         $repPerformance = [];
         $repRows = DB::table('orders')
-            ->where('status', OrderStatus::COMPLETED->value)
-            ->whereDate('completed_at', '>=', $startDate)
-            ->whereDate('completed_at', '<=', $endDate)
+            ->where('status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('updated_at', '>=', $startDate)
+            ->whereDate('updated_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('representative_id', $repId))
             ->selectRaw('representative_id, SUM(final_profit) as total_profit, SUM(total_amount) as total_revenue, COUNT(*) as orders_count')
             ->groupBy('representative_id')
@@ -230,9 +235,10 @@ class ReportApiController extends Controller
         $rows = DB::table('order_items')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->where('orders.status', OrderStatus::COMPLETED->value)
-            ->whereDate('orders.completed_at', '>=', $startDate)
-            ->whereDate('orders.completed_at', '<=', $endDate)
+            ->where('orders.status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('orders.waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('orders.updated_at', '>=', $startDate)
+            ->whereDate('orders.updated_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('orders.representative_id', $repId))
             ->selectRaw('
                 products.id,
@@ -284,11 +290,12 @@ class ReportApiController extends Controller
         }
 
         $revenueRows = DB::table('orders')
-            ->where('status', OrderStatus::COMPLETED->value)
-            ->whereDate('completed_at', '>=', $startDate)
-            ->whereDate('completed_at', '<=', $endDate)
+            ->where('status', OrderStatus::SENT_TO_GATEWAY->value)
+            ->whereIn('waseet_status', ['واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون'])
+            ->whereDate('updated_at', '>=', $startDate)
+            ->whereDate('updated_at', '<=', $endDate)
             ->when($repId, fn($q) => $q->where('representative_id', $repId))
-            ->selectRaw("DATE_FORMAT(completed_at, '{$groupFormat}') as period, SUM(total_amount) as revenue, SUM(final_profit) as profit")
+            ->selectRaw("DATE_FORMAT(updated_at, '{$groupFormat}') as period, SUM(total_amount) as revenue, SUM(final_profit) as profit")
             ->groupBy('period')
             ->orderBy('period')
             ->get()

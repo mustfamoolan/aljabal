@@ -32,22 +32,21 @@ class SyncOrderStatuses extends Command
      */
     public function handle(
         GatewayIntegrationService $gatewayService,
-        OrderService $orderService,
         NotificationService $notificationService
     ) {
         $this->info("🚀 Starting Waseet Orders Sync...");
 
-        // Get orders that are prepared or new and have a waseet_order_id
-        $orders = Order::whereIn('status', [OrderStatus::PREPARED, OrderStatus::NEW])
+        // Get orders that are sent to gateway but still need updates
+        $orders = Order::where('status', OrderStatus::SENT_TO_GATEWAY)
             ->whereNotNull('waseet_order_id')
             ->get();
 
         if ($orders->isEmpty()) {
-            $this->info("No active orders found to sync.");
+            $this->info("No active orders in 'SENT_TO_GATEWAY' found to sync.");
             return;
         }
 
-        $this->info("Found {$orders->count()} active orders to check.");
+        $this->info("Found {$orders->count()} orders to check.");
 
         $updatedCount = 0;
 
@@ -76,21 +75,15 @@ class SyncOrderStatuses extends Command
                 // Log the status change (History)
                 DB::table('order_status_logs')->insert([
                     'order_id' => $order->id,
-                    'status' => $newWaseetStatus,
+                    'status' => $order->status->value,
+                    'waseet_status' => $newWaseetStatus,
+                    'notes' => "تحديث تلقائي (مزامنة): من {$oldWaseetStatus} إلى {$newWaseetStatus}",
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
 
-                // Map Waseet status to internal status
-                $newInternalStatus = $this->mapWaseetToInternalStatus($newWaseetStatus);
-
-                if ($newInternalStatus && $newInternalStatus !== $order->status) {
-                    $this->info("   -> Changing internal status to {$newInternalStatus->name}");
-                    $orderService->changeOrderStatus($order, $newInternalStatus);
-                } else {
-                    // Just a text change (e.g., 'مباع' to 'واصل' which are both COMPLETED, or some intermediate status)
-                    $notificationService->sendOrderStatusNotification($order, $oldWaseetStatus, $newWaseetStatus);
-                }
+                // Send notification
+                $notificationService->sendOrderStatusNotification($order, $oldWaseetStatus, $newWaseetStatus);
 
                 $updatedCount++;
 
@@ -101,19 +94,5 @@ class SyncOrderStatuses extends Command
         }
 
         $this->info("✨ Sync complete! Updated {$updatedCount} orders.");
-    }
-
-    /**
-     * Map Al-Waseet statuses to internal OrderStatus enum
-     */
-    protected function mapWaseetToInternalStatus(string $waseetStatus): ?OrderStatus
-    {
-        return match ($waseetStatus) {
-            'واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون' => OrderStatus::COMPLETED,
-            'راجع', 'تم استلام الراجع', 'إيداع راجع' => OrderStatus::RETURNED,
-            'ملغي' => OrderStatus::CANCELLED,
-            'قيد المعالجة', 'تم التجهيز', 'تم الاستلام من قبل المندوب' => OrderStatus::PREPARED,
-            default => null,
-        };
     }
 }

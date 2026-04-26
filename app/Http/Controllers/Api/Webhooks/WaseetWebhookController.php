@@ -38,7 +38,7 @@ class WaseetWebhookController extends Controller
             'waseet_status' => $newWaseetStatus
         ]);
 
-        // Log the status change (History) using Model
+        // Log the status change (History)
         \App\Models\OrderStatusLog::create([
             'order_id' => $order->id,
             'status' => $order->status ? $order->status->value : 'unknown',
@@ -46,45 +46,17 @@ class WaseetWebhookController extends Controller
             'notes' => "تحديث تلقائي من الوسيط: من {$oldWaseetStatus} إلى {$newWaseetStatus}",
         ]);
 
-        // Automate internal status mapping
+        // Send notification about the waseet status change
         try {
-            $orderService = app(\App\Services\Orders\OrderService::class);
-            $newInternalStatus = $this->mapWaseetToInternalStatus($newWaseetStatus);
-
-            \Illuminate\Support\Facades\Log::info("Mapping Waseet status '{$newWaseetStatus}' to Internal: " . ($newInternalStatus ? $newInternalStatus->name : 'NONE'));
-
-            if ($newInternalStatus && $newInternalStatus !== $order->status) {
-                \Illuminate\Support\Facades\Log::info("Changing internal status for Order #{$order->id} to {$newInternalStatus->name}");
-                $orderService->changeOrderStatus($order, $newInternalStatus);
-            } else {
-                \Illuminate\Support\Facades\Log::info("No internal status change needed for Order #{$order->id}. Sending specific status notification.");
-                $notificationService = app(\App\Services\Notifications\NotificationService::class);
-                $notificationService->sendOrderStatusNotification($order, $oldWaseetStatus, $newWaseetStatus);
-            }
+            $notificationService = app(\App\Services\Notifications\NotificationService::class);
+            $notificationService->sendOrderStatusNotification($order, $oldWaseetStatus, $newWaseetStatus);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("Failed to sync status for order {$order->id}: " . $e->getMessage(), [
-                'exception' => $e
-            ]);
+            \Illuminate\Support\Facades\Log::error("Failed to send notification for order {$order->id}: " . $e->getMessage());
         }
 
         return response()->json([
             'status' => true,
             'message' => 'Webhook processed successfully'
         ]);
-    }
-
-    /**
-     * Map Al-Waseet statuses to internal OrderStatus enum
-     */
-    protected function mapWaseetToInternalStatus(string $waseetStatus): ?\App\Enums\OrderStatus
-    {
-        return match ($waseetStatus) {
-            'قيد المعالجة', 'تم التجهيز', 'فعال' => \App\Enums\OrderStatus::PREPARED,
-            'تم الاستلام من قبل المندوب' => \App\Enums\OrderStatus::PICKED_UP,
-            'واصل', 'مباع', 'تم تسليم المبالغ', 'تم التسليم للزبون' => \App\Enums\OrderStatus::COMPLETED,
-            'راجع', 'تم استلام الراجع', 'إيداع راجع', 'تم الارجاع الى التاجر' => \App\Enums\OrderStatus::RETURNED,
-            'ملغي' => \App\Enums\OrderStatus::CANCELLED,
-            default => null,
-        };
     }
 }

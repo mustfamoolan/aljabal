@@ -61,11 +61,7 @@ class OrderResource extends JsonResource
                 'status_label' => $log->waseet_status ?: (
                     match($log->status) {
                         'new' => 'تم استلام الطلب الجديد',
-                        'prepared' => 'تم تجهيز الطلب',
-                        'delivered' => 'تم التسليم من قبل المندوب',
-                        'completed' => 'مكتمل',
-                        'cancelled' => 'ملغي',
-                        'returned' => 'راجع',
+                        'sent_to_gateway' => 'تم رفع الطلب لنظام الوسيط',
                         default => \App\Enums\OrderStatus::tryFrom($log->status)?->label() ?? $log->status
                     }
                 ),

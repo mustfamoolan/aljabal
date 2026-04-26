@@ -57,8 +57,8 @@ class OrderController extends Controller
             ],
             'stats' => [
                 'total' => Order::count(),
-                'pending' => Order::whereIn('status', ['new', 'prepared'])->count(),
-                'completed' => Order::where('status', 'completed')->count(),
+                'new' => Order::where('status', OrderStatus::NEW->value)->count(),
+                'sent' => Order::where('status', OrderStatus::SENT_TO_GATEWAY->value)->count(),
             ],
         ]);
     }
@@ -128,7 +128,7 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['required', 'string', 'in:new,prepared,completed,cancelled,returned,replaced'],
+            'status' => ['required', 'string', 'in:new,sent_to_gateway'],
         ]);
 
         try {
@@ -154,8 +154,8 @@ class OrderController extends Controller
             $result = $this->gatewayService->sendToWaseet($order);
 
             if ($result['success'] ?? false) {
-                // Automate Status Change to Prepared
-                $this->orderService->changeOrderStatus($order, OrderStatus::PREPARED, auth()->user());
+                // Automate Status Change to Sent to Gateway
+                $this->orderService->changeOrderStatus($order, OrderStatus::SENT_TO_GATEWAY, auth()->user());
 
                 return response()->json([
                     'status' => true,

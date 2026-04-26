@@ -275,6 +275,7 @@ class GatewayIntegrationService
                     'waseet_order_id' => $data['data']['qr_id'] ?? $data['data']['order_id'],
                     'waseet_tracking_url' => $data['data']['qr_link'] ?? $data['data']['tracking_url'],
                     'waseet_status' => 'قيد المعالجة',
+                    'status' => \App\Enums\OrderStatus::SENT_TO_GATEWAY,
                 ]);
 
                 // Create initial history log (First Movement)

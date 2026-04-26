@@ -21,7 +21,7 @@ class OrderController extends Controller
 
         $orders = Order::where('representative_id', $representativeId)
             ->where('created_at', '>=', $today)
-            ->whereNotIn('status', ['cancelled', 'returned'])
+            ->where('status', '!=', OrderStatus::NEW->value) // Anything sent to gateway or beyond
             ->get();
 
         $stats = [
@@ -71,10 +71,10 @@ class OrderController extends Controller
             ],
             'stats' => [
                 'total' => Order::where('representative_id', $representativeId)->count(),
-                'pending' => Order::where('representative_id', $representativeId)
-                    ->whereIn('status', ['new', 'prepared'])->count(),
-                'completed' => Order::where('representative_id', $representativeId)
-                    ->where('status', 'completed')->count(),
+                'new' => Order::where('representative_id', $representativeId)
+                    ->where('status', OrderStatus::NEW->value)->count(),
+                'sent' => Order::where('representative_id', $representativeId)
+                    ->where('status', OrderStatus::SENT_TO_GATEWAY->value)->count(),
             ],
         ]);
     }

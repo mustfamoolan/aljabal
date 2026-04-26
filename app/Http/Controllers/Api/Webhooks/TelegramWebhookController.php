@@ -217,7 +217,7 @@ class TelegramWebhookController extends Controller
     protected function sendRepresentativeInfo($chatId, Representative $rep)
     {
         $totalOrders = $rep->orders()->count();
-        $completedOrders = $rep->orders()->where('status', 'completed')->count();
+        $completedOrders = $rep->orders()->where('status', 'sent_to_gateway')->count();
         
         $message = "👤 <b>معلومات المندوب</b>\n\n";
         $message .= "▪️ <b>الاسم:</b> {$rep->name}\n";
@@ -261,11 +261,7 @@ class TelegramWebhookController extends Controller
             foreach ($sortedLogs as $log) {
                 $time = $log->created_at->format('Y-m-d h:i A');
                 
-                $statusText = $log->status;
-                $enumCase = \App\Enums\OrderStatus::tryFrom($statusText);
-                if ($enumCase) {
-                    $statusText = $enumCase->label();
-                }
+                $statusText = $log->waseet_status ?: (\App\Enums\OrderStatus::tryFrom($log->status)?->label() ?? $log->status);
 
                 $message .= "🔸 {$statusText} <i>({$time})</i>\n";
             }

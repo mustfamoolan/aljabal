@@ -149,9 +149,8 @@ class OrderService
             // Reserve stock from available quantity
             $product->decrement('available_quantity', $quantity);
 
-            // Deduct physical stock if order is already dispatched
-            $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
-            if (in_array($order->status, $dispatchedStatuses)) {
+            // Deduct physical stock if order is already dispatched to gateway
+            if ($order->status === OrderStatus::SENT_TO_GATEWAY) {
                 $product->decrement('quantity', $quantity);
             }
 
@@ -196,9 +195,8 @@ class OrderService
             if ($delta != 0) {
                 $product->decrement('available_quantity', $delta);
                 
-                // Adjust physical stock if order is already dispatched
-                $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
-                if (in_array($orderItem->order->status, $dispatchedStatuses)) {
+                // Adjust physical stock if order is already dispatched to gateway
+                if ($orderItem->order->status === OrderStatus::SENT_TO_GATEWAY) {
                     $product->decrement('quantity', $delta);
                 }
             }
@@ -229,9 +227,8 @@ class OrderService
             // Release reserved stock back to available quantity
             $orderItem->product->increment('available_quantity', $orderItem->quantity);
 
-            // Restore physical stock if order was already dispatched
-            $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
-            if (in_array($order->status, $dispatchedStatuses)) {
+            // Restore physical stock if order was already dispatched to gateway
+            if ($order->status === OrderStatus::SENT_TO_GATEWAY) {
                 $orderItem->product->increment('quantity', $orderItem->quantity);
             }
             
@@ -269,138 +266,67 @@ class OrderService
         return $order->fresh();
     }
 
-    /**
-     * Complete order and add profit to representative account.
-     */
-    public function completeOrder(Order $order): Order
-    {
-        if (!$order->canBeCompleted()) {
-            throw new \Exception('لا يمكن إكمال هذا الطلب.');
-        }
 
-        if (!$order->representative_id) {
-            throw new \Exception('الطلب لا يحتوي على مندوب.');
-        }
-
-        return DB::transaction(function () use ($order) {
-            $representative = $order->representative;
-
-            // Calculate totals if not already calculated
-            $this->calculateOrderTotals($order);
-
-            // Deduct balance for withdrawal orders or add profit for standard orders
-            if ($order->is_withdrawal_order) {
-                // Determine deduction amount (books wholesale + delivery fee + gifts offset)
-                $amountToDeduct = (float) $order->total_amount;
-                
-                if ($amountToDeduct > 0) {
-                    $this->accountService->deductBalance(
-                        $representative,
-                        $amountToDeduct,
-                        "خصم إجمالي طلب سحب رصيد (شراء مخفض) - طلب #{$order->id}"
-                    );
-                }
-            } else {
-                // Add final profit to representative account
-                if ($order->final_profit > 0) {
-                    $this->accountService->addBalance(
-                        $representative,
-                        (float) $order->final_profit,
-                        TransactionType::COMMISSION->value,
-                        "ربح من طلب #{$order->id}",
-                        $order->createdBy
-                    );
-                }
-            }
-
-            // Award Gift Points
-            $this->giftPointsService->awardPoints($order);
-
-            $oldStatus = $order->status->value;
-
-            // Physical quantity is now handled centrally in changeOrderStatus
-            // to support deduction at "PREPARED" stage as well.
-            
-            // Update order status
-            $order->update([
-                'status' => OrderStatus::COMPLETED,
-                'completed_at' => now(),
-            ]);
-
-            // Send notification
-            try {
-                app(\App\Services\Notifications\NotificationService::class)->sendOrderStatusNotification($order, $oldStatus, OrderStatus::COMPLETED->value);
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Error triggering order completion notification: ' . $e->getMessage());
-            }
-
-            return $order->fresh();
-        });
-    }
-
-    /**
-     * Change order status.
-     */
     public function changeOrderStatus(Order $order, OrderStatus $status, ?User $user = null): Order
     {
-        // If completing order, use completeOrder method
-        if ($status === OrderStatus::COMPLETED) {
-            return $this->completeOrder($order);
-        }
-
         $oldStatus = $order->status;
-        $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
-        $returnedStatuses = [OrderStatus::CANCELLED, OrderStatus::RETURNED];
 
-        // 1. Handle Physical Stock (quantity)
-        // If moving FROM a non-dispatched state TO a dispatched state -> DEDUCT physical stock
-        if (!in_array($oldStatus, $dispatchedStatuses) && in_array($status, $dispatchedStatuses)) {
-            foreach ($order->orderItems as $item) {
-                $item->product->decrement('quantity', $item->quantity);
-            }
+        // If moving FROM NEW TO SENT_TO_GATEWAY -> Handle stock and finances
+        if ($oldStatus === OrderStatus::NEW && $status === OrderStatus::SENT_TO_GATEWAY) {
+            return DB::transaction(function () use ($order, $status) {
+                // 1. Deduct Physical Stock
+                foreach ($order->orderItems as $item) {
+                    $item->product->decrement('quantity', $item->quantity);
+                }
+
+                // 2. Handle Finances (Profit/Withdrawal)
+                $representative = $order->representative;
+                if ($representative) {
+                    if ($order->is_withdrawal_order) {
+                        $amountToDeduct = (float) $order->total_amount;
+                        if ($amountToDeduct > 0) {
+                            $this->accountService->deductBalance(
+                                $representative,
+                                $amountToDeduct,
+                                "خصم إجمالي طلب سحب رصيد - طلب #{$order->id}"
+                            );
+                        }
+                    } else {
+                        if ($order->final_profit > 0) {
+                            $this->accountService->addBalance(
+                                $representative,
+                                (float) $order->final_profit,
+                                TransactionType::COMMISSION->value,
+                                "ربح من طلب #{$order->id}",
+                                $order->createdBy
+                            );
+                        }
+                    }
+                }
+
+                // 3. Award Gift Points
+                $this->giftPointsService->awardPoints($order);
+
+                // 4. Update Status
+                $order->update([
+                    'status' => $status,
+                    'completed_at' => now(), // Still mark completion time for records
+                ]);
+
+                // 5. Record movement
+                \App\Models\OrderStatusLog::create([
+                    'order_id' => $order->id,
+                    'status' => $status->value,
+                    'waseet_status' => $status->label(),
+                    'notes' => 'تم تحويل الحالة إلى تم الإرسال للوسيط ومعالجة المخزن والأرباح.',
+                ]);
+
+                return $order->fresh();
+            });
         }
-        // If moving FROM a dispatched state TO a returned/cancelled state -> RESTORE physical stock
-        elseif (in_array($oldStatus, $dispatchedStatuses) && in_array($status, $returnedStatuses)) {
-            foreach ($order->orderItems as $item) {
-                $item->product->increment('quantity', $item->quantity);
-            }
-        }
 
-        // 2. Handle Available Stock (available_quantity)
-        // If moving FROM an active state TO a returned/cancelled state -> RESTORE available stock
-        if (in_array($status, $returnedStatuses) && !in_array($oldStatus, $returnedStatuses)) {
-            foreach ($order->orderItems as $item) {
-                $item->product->increment('available_quantity', $item->quantity);
-            }
-        }
-        // If moving FROM a returned state BACK to an active state -> RE-DEDUCT available stock
-        elseif (!in_array($status, $returnedStatuses) && in_array($oldStatus, $returnedStatuses)) {
-            foreach ($order->orderItems as $item) {
-                $item->product->decrement('available_quantity', $item->quantity);
-            }
-        }
-
-        $oldStatusValue = $oldStatus->value;
-
-        $order->update([
-            'status' => $status,
-            'completed_at' => $status === OrderStatus::COMPLETED ? now() : null,
-        ]);
-
-        // Record the movement in timeline
-        \App\Models\OrderStatusLog::create([
-            'order_id' => $order->id,
-            'status' => $status->value,
-            'waseet_status' => $status->label(),
-            'notes' => 'تحديث الحالة يدوياً من قبل الإدارة.',
-        ]);
-
-        // Send notification
-        try {
-            app(\App\Services\Notifications\NotificationService::class)->sendOrderStatusNotification($order, $oldStatus->value, $status->value);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Error triggering order status change notification: ' . $e->getMessage());
-        }
+        // Handle other transitions (e.g. back to NEW if we ever allow that, or just simple update)
+        $order->update(['status' => $status]);
 
         return $order->fresh();
     }
@@ -410,8 +336,8 @@ class OrderService
      */
     public function updateOrder(Order $order, array $data): Order
     {
-        if ($order->status === OrderStatus::COMPLETED) {
-            throw new \Exception('لا يمكن تعديل طلب مكتمل.');
+        if ($order->status === OrderStatus::SENT_TO_GATEWAY) {
+            throw new \Exception('لا يمكن تعديل طلب تم إرساله للوسيط بالفعل.');
         }
 
         return DB::transaction(function () use ($order, $data) {
@@ -503,27 +429,23 @@ class OrderService
             // We use direct DB query to be 100% sure we get data even if relations are finicky
             $items = DB::table('order_items')->where('order_id', $order->id)->get();
 
-            // 2. Restore Quantities
-            $dispatchedStatuses = [OrderStatus::PREPARED, OrderStatus::COMPLETED, OrderStatus::PICKED_UP];
-            $returnedStatuses = [OrderStatus::CANCELLED, OrderStatus::RETURNED];
-
             foreach ($order->orderItems as $item) {
                 $product = $item->product;
                 if (!$product) continue;
 
-                // Restore physical stock if it was deducted (Dispatched states)
-                if (in_array($status, $dispatchedStatuses)) {
+                // Restore physical stock if it was deducted (SENT_TO_GATEWAY)
+                if ($status === OrderStatus::SENT_TO_GATEWAY) {
                     $product->increment('quantity', $item->quantity);
                 }
 
-                // Restore available stock if it wasn't already restored (Active states)
-                if (!in_array($status, $returnedStatuses)) {
+                // Restore available stock if it was deducted (NEW)
+                if ($status === OrderStatus::NEW) {
                     $product->increment('available_quantity', $item->quantity);
                 }
             }
 
-            // 3. Reverse Financial Impact if COMPLETED
-            if ($status === OrderStatus::COMPLETED && $representative) {
+            // 3. Reverse Financial Impact if SENT_TO_GATEWAY
+            if ($status === OrderStatus::SENT_TO_GATEWAY && $representative) {
                 if ($order->is_withdrawal_order) {
                     // Re-add balance to representative (refunding their purchase)
                     $this->accountService->addBalance(
