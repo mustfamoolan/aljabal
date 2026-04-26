@@ -119,7 +119,7 @@ class ProductService
      */
     public function getProduct(Product $product): Product
     {
-        return $product->load(['category', 'supplier', 'images', 'tags', 'purchaseHistory.supplier', 'purchaseHistory.createdBy']);
+        return $product->load(['category', 'subcategory', 'supplier', 'images', 'tags', 'purchaseHistory.supplier', 'purchaseHistory.createdBy']);
     }
 
     /**
