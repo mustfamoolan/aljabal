@@ -198,6 +198,91 @@ class NotificationService
     }
 
     /**
+     * Send order updated notification
+     */
+    public function sendOrderUpdatedNotification(\App\Models\Order $order): void
+    {
+        try {
+            $title = "تعديل طلب #{$order->id}";
+            $body = "تم تعديل تفاصيل الطلب الخاص بـ {$order->customer_name}";
+
+            // Notify Representative
+            if ($order->representative) {
+                $this->sendCustomNotification($order->representative, $title, $body, [
+                    'type' => 'order_update',
+                    'order_id' => $order->id
+                ]);
+
+                // Telegram for representative
+                if ($order->representative->telegram_chat_id) {
+                    $telegramService = app(\App\Services\TelegramBotService::class);
+                    $message = "🛠 <b>تحديث بيانات طلب!</b>\n\n";
+                    $message .= "🔖 <b>رقم الطلب:</b> <code>{$order->id}</code>\n";
+                    $message .= "👤 <b>الزبون:</b> <code>{$order->customer_name}</code>\n";
+                    $message .= "💰 <b>المبلغ الجديد:</b> <code>" . number_format($order->total_amount, 0) . " د.ع</code>\n";
+                    $message .= "📍 <b>العنوان:</b> <code>{$order->customer_address}</code>\n";
+                    $message .= "\n✅ تم تحديث بيانات الطلب بنجاح في النظام.";
+                    
+                    $telegramService->sendMessage($order->representative->telegram_chat_id, $message);
+                }
+            }
+
+            // Notify Admins
+            $admins = User::role('admin')->where('is_active', true)->get();
+            foreach ($admins as $admin) {
+                $this->sendCustomNotification($admin, $title, $body, [
+                    'type' => 'order_update',
+                    'order_id' => $order->id
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send order updated notification: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send order deleted notification
+     */
+    public function sendOrderDeletedNotification(\App\Models\Order $order): void
+    {
+        try {
+            $title = "حذف طلب #{$order->id}";
+            $body = "تم حذف الطلب الخاص بـ {$order->customer_name} وإلغاء كافة تأثيراته المالية.";
+
+            // Notify Representative
+            if ($order->representative) {
+                $this->sendCustomNotification($order->representative, $title, $body, [
+                    'type' => 'order_delete',
+                    'order_id' => $order->id
+                ]);
+
+                // Telegram for representative
+                if ($order->representative->telegram_chat_id) {
+                    $telegramService = app(\App\Services\TelegramBotService::class);
+                    $message = "🗑 <b>تم حذف طلب!</b>\n\n";
+                    $message .= "🔖 <b>رقم الطلب:</b> <code>{$order->id}</code>\n";
+                    $message .= "👤 <b>الزبون:</b> <code>{$order->customer_name}</code>\n";
+                    $message .= "💰 <b>المبلغ:</b> <code>" . number_format($order->total_amount, 0) . " د.ع</code>\n";
+                    $message .= "\n⚠️ تم حذف هذا الطلب من النظام وإلغاء كافة القيود المالية المرتبطة به.";
+                    
+                    $telegramService->sendMessage($order->representative->telegram_chat_id, $message);
+                }
+            }
+
+            // Notify Admins
+            $admins = User::role('admin')->where('is_active', true)->get();
+            foreach ($admins as $admin) {
+                $this->sendCustomNotification($admin, $title, $body, [
+                    'type' => 'order_delete',
+                    'order_id' => $order->id
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to send order deleted notification: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Send withdrawal request notification to admins
      */
     public function sendWithdrawalRequestNotification(\App\Models\WithdrawalRequest $request): void

@@ -376,6 +376,13 @@ class OrderService
                 }
             }
 
+            // 5. Send Notification
+            try {
+                app(\App\Services\Notifications\NotificationService::class)->sendOrderUpdatedNotification($order);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to send order updated notification for #{$order->id}: " . $e->getMessage());
+            }
+
             return $order->fresh();
         });
     }
@@ -472,7 +479,17 @@ class OrderService
             $this->giftPointsService->reversePoints($order);
 
             // 5. Delete Order (and items via cascade)
-            return $order->delete();
+            $deleted = $order->delete();
+
+            if ($deleted) {
+                try {
+                    app(\App\Services\Notifications\NotificationService::class)->sendOrderDeletedNotification($order);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("Failed to send order deleted notification for #{$order->id}: " . $e->getMessage());
+                }
+            }
+
+            return $deleted;
         });
     }
 }
