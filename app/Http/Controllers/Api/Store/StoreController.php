@@ -120,7 +120,7 @@ class StoreController extends Controller
             'name' => $product->name,
             'author' => $product->author,
             'retail_price' => (float) $product->retail_price,
-            'image_url' => $product->main_image ? $product->main_image->image_url : null,
+            'image_url' => $product->image_url,
             'category' => $product->category ? $product->category->name : null,
         ];
 
