@@ -226,3 +226,11 @@ Route::prefix('representative')->group(function () {
         });
     });
 });
+
+// Store API Routes (Public)
+Route::prefix('store')->group(function () {
+    Route::get('/home', [\App\Http\Controllers\Api\Store\StoreController::class, 'home']);
+    Route::get('/products', [\App\Http\Controllers\Api\Store\StoreController::class, 'products']);
+    Route::get('/products/{product}', [\App\Http\Controllers\Api\Store\StoreController::class, 'productDetails']);
+    Route::get('/categories', [\App\Http\Controllers\Api\Store\StoreController::class, 'categories']);
+});
