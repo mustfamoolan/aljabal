@@ -103,6 +103,20 @@ class StoreController extends Controller
     }
 
     /**
+     * Get single category with its subcategories
+     */
+    public function categoryDetails(Category $category)
+    {
+        $category->load(['children' => function($query) {
+            $query->where('is_active', true);
+        }]);
+
+        return response()->json([
+            'category' => $category,
+        ]);
+    }
+
+    /**
      * Format a collection of products
      */
     private function formatProducts($products)

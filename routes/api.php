@@ -233,4 +233,6 @@ Route::prefix('store')->group(function () {
     Route::get('/products', [\App\Http\Controllers\Api\Store\StoreController::class, 'products']);
     Route::get('/products/{product}', [\App\Http\Controllers\Api\Store\StoreController::class, 'productDetails']);
     Route::get('/categories', [\App\Http\Controllers\Api\Store\StoreController::class, 'categories']);
+    Route::get('/categories/{category}', [\App\Http\Controllers\Api\Store\StoreController::class, 'categoryDetails']);
 });
+
