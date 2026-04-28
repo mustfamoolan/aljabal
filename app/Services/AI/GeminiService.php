@@ -152,7 +152,7 @@ class GeminiService
 
                 Log::info('Calling Gemini Chat', ['message' => $userMessage, 'retry' => $retryCount]);
 
-                $model = config('services.gemini.model', 'gemini-flash-latest');
+                $model = config('services.gemini.model', 'gemini-1.5-flash');
                 $response = Gemini::generativeModel(model: $model)->generateContent($fullPrompt);
                 return $response->text();
             } catch (\Exception $e) {
