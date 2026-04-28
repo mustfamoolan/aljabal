@@ -227,7 +227,8 @@ class TelegramWebhookController extends Controller
             if ($transactions->isNotEmpty()) {
                 $context .= "\nآخر العمليات المالية:\n";
                 foreach ($transactions as $t) {
-                    $context .= "- نوع: {$t->type} | مبلغ: " . number_format($t->amount, 0) . " | بيان: {$t->description}\n";
+                    $typeLabel = is_object($t->type) && method_exists($t->type, 'label') ? $t->type->label() : (is_object($t->type) ? $t->type->value : $t->type);
+                    $context .= "- نوع: {$typeLabel} | مبلغ: " . number_format($t->amount, 0) . " | بيان: {$t->description}\n";
                 }
             }
         }
