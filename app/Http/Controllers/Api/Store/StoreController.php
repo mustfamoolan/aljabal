@@ -108,8 +108,16 @@ class StoreController extends Controller
     public function categoryDetails(Category $category)
     {
         $category->load(['children' => function($query) {
-            $query->where('is_active', true);
+            $query->where('is_active', true)->with(['subcategoryProducts' => function($q) {
+                $q->where('is_active', true)->latest()->take(10);
+            }]);
         }]);
+
+        // Format products for each subcategory
+        $category->children->each(function($sub) {
+            $sub->latest_products = $sub->subcategoryProducts->map(fn($p) => $this->formatProduct($p));
+            unset($sub->subcategoryProducts); // Clean up to avoid duplicate data
+        });
 
         return response()->json([
             'category' => $category,
