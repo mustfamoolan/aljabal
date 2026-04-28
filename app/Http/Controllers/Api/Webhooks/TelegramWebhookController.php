@@ -206,7 +206,33 @@ class TelegramWebhookController extends Controller
             }
         }
 
-        // 2. Search for Representative's Orders (Enhanced with more status info)
+        // 2. Financial Context & Sales Performance
+        if ($representative) {
+            $totalSales = Order::where('representative_id', $representative->id)->sum('total_amount');
+            $totalProfit = Order::where('representative_id', $representative->id)->sum('final_profit');
+            $ordersCount = Order::where('representative_id', $representative->id)->count();
+            $completedOrders = Order::where('representative_id', $representative->id)->where('status', \App\Enums\OrderStatus::SENT_TO_GATEWAY)->count();
+            
+            $context .= "\n--- البيانات المالية والحسابية للمندوب (خاصة وسرية) ---\n";
+            $context .= "الاسم: {$representative->name}\n";
+            $context .= "الرصيد الكلي الحالي: " . number_format($representative->balance, 0) . " د.ع\n";
+            $context .= "الرصيد المتاح للسحب: " . number_format($representative->available_balance, 0) . " د.ع\n";
+            $context .= "إجمالي مبيعاتك (كل الطلبات): " . number_format($totalSales, 0) . " د.ع\n";
+            $context .= "إجمالي أرباحك الصافية: " . number_format($totalProfit, 0) . " د.ع\n";
+            $context .= "عدد الطلبات الكلي: {$ordersCount}\n";
+            $context .= "عدد الطلبات المكتملة: {$completedOrders}\n";
+
+            // Latest Transactions
+            $transactions = $representative->transactions()->latest()->limit(3)->get();
+            if ($transactions->isNotEmpty()) {
+                $context .= "\nآخر العمليات المالية:\n";
+                foreach ($transactions as $t) {
+                    $context .= "- نوع: {$t->type} | مبلغ: " . number_format($t->amount, 0) . " | بيان: {$t->description}\n";
+                }
+            }
+        }
+
+        // 3. Search for Representative's Orders (Enhanced with more status info)
         if ($representative && (str_contains($text, 'طلب') || str_contains($text, 'أوردر') || str_contains($text, 'شحنة') || str_contains($text, 'حالة'))) {
             $latestOrders = Order::where('representative_id', $representative->id)
                 ->latest()
