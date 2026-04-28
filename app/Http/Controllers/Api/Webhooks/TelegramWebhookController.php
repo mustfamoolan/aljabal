@@ -166,41 +166,68 @@ class TelegramWebhookController extends Controller
     protected function handleAIChat($chatId, $representative, $text)
     {
         $context = "";
+        
+        // Clean text to extract keywords for better database searching
+        $searchTerms = $this->cleanQuery($text);
 
-        // Try to gather context based on keywords
-        if (str_contains($text, 'كتاب') || str_contains($text, 'رواية') || strlen($text) > 3) {
+        // 1. Search for Books/Products
+        if (strlen($searchTerms) > 2) {
             $products = Product::where('is_active', true)
-                ->where(function ($q) use ($text) {
-                    $q->where('name', 'like', "%{$text}%")
-                      ->orWhere('author', 'like', "%{$text}%");
+                ->where(function ($q) use ($searchTerms, $text) {
+                    $q->where('name', 'like', "%{$searchTerms}%")
+                      ->orWhere('author', 'like', "%{$searchTerms}%")
+                      ->orWhere('sku', 'like', "%{$searchTerms}%");
+                    
+                    // Also try searching with full text if it's short
+                    if (strlen($text) < 30) {
+                        $q->orWhere('name', 'like', "%{$text}%");
+                    }
                 })
-                ->limit(5)
+                ->limit(8)
                 ->get();
             
             if ($products->isNotEmpty()) {
-                $context .= "المنتجات (الكتب) المتوفرة ذات الصلة:\n";
+                $context .= "قائمة الكتب المتوفرة في قاعدة بياناتنا ومخزننا حالياً (استخدم هذه البيانات حصراً للإجابة عن التوفر والسعر):\n";
                 foreach ($products as $p) {
-                    $context .= "- {$p->name} | المؤلف: {$p->author} | السعر: " . number_format($p->retail_price) . " | الكمية: {$p->quantity}\n";
+                    $context .= "- الكتاب: {$p->name} | المؤلف: " . ($p->author ?? 'غير محدد') . " | السعر: " . number_format($p->retail_price, 0) . " د.ع | الكمية المتوفرة: {$p->available_quantity} | الرف: " . ($p->shelf ?? 'غير محدد') . "\n";
                 }
+            } else {
+                $context .= "تنبيه: لم يتم العثور على أي كتاب في قاعدة البيانات يطابق البحث '{$searchTerms}'. إذا سأل المندوب عن توفر كتاب، أخبره أنه غير موجود في المخزن حالياً.\n";
             }
         }
 
-        if ($representative && (str_contains($text, 'طلب') || str_contains($text, 'أوردر') || str_contains($text, 'شحنة'))) {
+        // 2. Search for Representative's Orders
+        if ($representative && (str_contains($text, 'طلب') || str_contains($text, 'أوردر') || str_contains($text, 'شحنة') || str_contains($text, 'حالة'))) {
             $latestOrders = Order::where('representative_id', $representative->id)
                 ->latest()
-                ->limit(3)
+                ->limit(5)
                 ->get();
             
             if ($latestOrders->isNotEmpty()) {
-                $context .= "\nآخر طلبات المندوب:\n";
+                $context .= "\nسجل طلباتك الأخيرة (استخدم هذه البيانات للإجابة عن حالة الطلبات):\n";
                 foreach ($latestOrders as $o) {
-                    $context .= "- رقم الطلب: {$o->id} | الزبون: {$o->customer_name} | الحالة: " . ($o->status ? $o->status->label() : 'غير معروف') . " | المبلغ: " . number_format($o->total_amount) . "\n";
+                    $statusLabel = $o->status ? $o->status->label() : 'غير معروف';
+                    $context .= "- طلب رقم: {$o->id} | الزبون: {$o->customer_name} | الحالة: {$statusLabel} | المبلغ: " . number_format($o->total_amount, 0) . " د.ع | تاريخ: {$o->created_at->format('Y-m-d')}\n";
                 }
             }
         }
 
         $aiResponse = $this->gemini->chat($text, $context);
         $this->telegram->sendMessage($chatId, $aiResponse);
+    }
+
+    protected function cleanQuery($text)
+    {
+        // Remove common filler words and symbols to extract core search terms
+        $fillers = [
+            'كتاب', 'رواية', 'عن', 'هل', 'عندك', 'يتوفر', 'متوفر', 'ابحث', 'اريد', 'أريد', 
+            'بكم', 'سعر', 'اسم', 'موجود', 'عرض', 'تفاصيل', 'معلومات', '؟', '!', ':', '"', "'"
+        ];
+        
+        $cleaned = str_replace($fillers, ' ', $text);
+        // Remove double spaces and trim
+        $cleaned = preg_replace('/\s+/', ' ', $cleaned);
+        return trim($cleaned);
     }
 
     protected function handlePhoneInput($chatId, $phone)
