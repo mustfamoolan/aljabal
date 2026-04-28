@@ -167,47 +167,58 @@ class TelegramWebhookController extends Controller
     {
         $context = "";
         
-        // Clean text to extract keywords for better database searching
+        // Clean and split text into individual keywords for fuzzy searching
         $searchTerms = $this->cleanQuery($text);
+        $keywords = explode(' ', $searchTerms);
+        // Remove very short words
+        $keywords = array_filter($keywords, function($word) {
+            return mb_strlen($word) > 2;
+        });
 
-        // 1. Search for Books/Products
-        if (strlen($searchTerms) > 2) {
-            $products = Product::where('is_active', true)
-                ->where(function ($q) use ($searchTerms, $text) {
-                    $q->where('name', 'like', "%{$searchTerms}%")
-                      ->orWhere('author', 'like', "%{$searchTerms}%")
-                      ->orWhere('sku', 'like', "%{$searchTerms}%");
-                    
-                    // Also try searching with full text if it's short
-                    if (strlen($text) < 30) {
-                        $q->orWhere('name', 'like', "%{$text}%");
-                    }
-                })
-                ->limit(8)
-                ->get();
+        // 1. Smart Search for Books/Products
+        if (!empty($keywords) || mb_strlen($searchTerms) > 2) {
+            $query = Product::where('is_active', true);
+
+            $query->where(function ($q) use ($keywords, $searchTerms, $text) {
+                // Priority 1: Exact phrase match
+                $q->where('name', 'like', "%{$searchTerms}%")
+                  ->orWhere('author', 'like', "%{$searchTerms}%");
+                
+                // Priority 2: Individual word matches (Smart Fuzzy Search)
+                foreach ($keywords as $word) {
+                    $q->orWhere('name', 'like', "%{$word}%")
+                      ->orWhere('author', 'like', "%{$word}%")
+                      ->orWhere('short_description', 'like', "%{$word}%")
+                      ->orWhere('translator', 'like', "%{$word}%");
+                }
+            });
+
+            $products = $query->latest()->limit(12)->get();
             
             if ($products->isNotEmpty()) {
-                $context .= "قائمة الكتب المتوفرة في قاعدة بياناتنا ومخزننا حالياً (استخدم هذه البيانات حصراً للإجابة عن التوفر والسعر):\n";
+                $context .= "إليك قائمة بنتائج البحث الذكي من قاعدة بياناتنا (اقترح الأقرب لطلب المندوب):\n";
                 foreach ($products as $p) {
-                    $context .= "- الكتاب: {$p->name} | المؤلف: " . ($p->author ?? 'غير محدد') . " | السعر: " . number_format($p->retail_price, 0) . " د.ع | الكمية المتوفرة: {$p->available_quantity} | الرف: " . ($p->shelf ?? 'غير محدد') . "\n";
+                    $context .= "- الكتاب: {$p->name} | المؤلف: " . ($p->author ?? 'غير محدد') . " | السعر: " . number_format($p->retail_price, 0) . " د.ع | المتوفر: {$p->available_quantity} | الرف: " . ($p->shelf ?? 'غير محدد') . "\n";
                 }
+                $context .= "\nملاحظة: إذا كان هناك أكثر من خيار، اعرضهم على المندوب بذكاء.\n";
             } else {
-                $context .= "تنبيه: لم يتم العثور على أي كتاب في قاعدة البيانات يطابق البحث '{$searchTerms}'. إذا سأل المندوب عن توفر كتاب، أخبره أنه غير موجود في المخزن حالياً.\n";
+                $context .= "تنبيه: لم يتم العثور على أي كتاب يطابق هذه الكلمات في المخزن حالياً.\n";
             }
         }
 
-        // 2. Search for Representative's Orders
+        // 2. Search for Representative's Orders (Enhanced with more status info)
         if ($representative && (str_contains($text, 'طلب') || str_contains($text, 'أوردر') || str_contains($text, 'شحنة') || str_contains($text, 'حالة'))) {
             $latestOrders = Order::where('representative_id', $representative->id)
                 ->latest()
-                ->limit(5)
+                ->limit(6)
                 ->get();
             
             if ($latestOrders->isNotEmpty()) {
-                $context .= "\nسجل طلباتك الأخيرة (استخدم هذه البيانات للإجابة عن حالة الطلبات):\n";
+                $context .= "\nسجل طلباتك الأخيرة للمتابعة:\n";
                 foreach ($latestOrders as $o) {
                     $statusLabel = $o->status ? $o->status->label() : 'غير معروف';
-                    $context .= "- طلب رقم: {$o->id} | الزبون: {$o->customer_name} | الحالة: {$statusLabel} | المبلغ: " . number_format($o->total_amount, 0) . " د.ع | تاريخ: {$o->created_at->format('Y-m-d')}\n";
+                    $waseetInfo = $o->waseet_status ? " | حالة التوصيل: {$o->waseet_status}" : "";
+                    $context .= "- طلب #{$o->id} | لـ {$o->customer_name} | الحالة: {$statusLabel}{$waseetInfo} | الإجمالي: " . number_format($o->total_amount, 0) . " د.ع | بتاريخ: {$o->created_at->format('d/m/Y')}\n";
                 }
             }
         }
