@@ -146,7 +146,8 @@ class GeminiService
 
             Log::info('Calling Gemini Chat', ['message' => $userMessage]);
 
-            $response = Gemini::generativeModel(model: 'gemini-2.0-flash')->generateContent($fullPrompt);
+            $model = config('services.gemini.model', 'gemini-flash-latest');
+            $response = Gemini::generativeModel(model: $model)->generateContent($fullPrompt);
             return $response->text();
         } catch (\Exception $e) {
             Log::error('Gemini Chat Error: ' . $e->getMessage());
@@ -160,8 +161,8 @@ class GeminiService
     protected function callGeminiAPI(string $prompt): array
     {
         try {
-            // Use gemini-2.0-flash
-            $response = Gemini::generativeModel(model: 'gemini-2.0-flash')->generateContent($prompt);
+            $model = config('services.gemini.model', 'gemini-flash-latest');
+            $response = Gemini::generativeModel(model: $model)->generateContent($prompt);
 
             $text = $response->text();
 
