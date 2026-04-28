@@ -10,13 +10,19 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
+use App\Services\AI\GeminiService;
+use App\Models\Order;
+use App\Models\Product;
+
 class TelegramWebhookController extends Controller
 {
     protected TelegramBotService $telegram;
+    protected GeminiService $gemini;
 
-    public function __construct(TelegramBotService $telegram)
+    public function __construct(TelegramBotService $telegram, GeminiService $gemini)
     {
         $this->telegram = $telegram;
+        $this->gemini = $gemini;
     }
 
     public function handle(Request $request)
@@ -135,8 +141,8 @@ class TelegramWebhookController extends Controller
                     return;
                 }
 
-                // Default search
-                $this->handleBookSearch($chatId, $text);
+                // AI Chat Integration
+                $this->handleAIChat($chatId, $rep, $text);
                 return;
             }
 
@@ -152,8 +158,49 @@ class TelegramWebhookController extends Controller
         } elseif ($state === 'awaiting_password') {
             $this->handlePasswordInput($chatId, $text);
         } else {
-            $this->telegram->sendMessage($chatId, "الرجاء إرسال /start للبدء.");
+            // Even for non-logged in users, we can use AI if it's a general question
+            $this->handleAIChat($chatId, null, $text);
         }
+    }
+
+    protected function handleAIChat($chatId, $representative, $text)
+    {
+        $context = "";
+
+        // Try to gather context based on keywords
+        if (str_contains($text, 'كتاب') || str_contains($text, 'رواية') || strlen($text) > 3) {
+            $products = Product::where('is_active', true)
+                ->where(function ($q) use ($text) {
+                    $q->where('name', 'like', "%{$text}%")
+                      ->orWhere('author', 'like', "%{$text}%");
+                })
+                ->limit(5)
+                ->get();
+            
+            if ($products->isNotEmpty()) {
+                $context .= "المنتجات (الكتب) المتوفرة ذات الصلة:\n";
+                foreach ($products as $p) {
+                    $context .= "- {$p->name} | المؤلف: {$p->author} | السعر: " . number_format($p->retail_price) . " | الكمية: {$p->quantity}\n";
+                }
+            }
+        }
+
+        if ($representative && (str_contains($text, 'طلب') || str_contains($text, 'أوردر') || str_contains($text, 'شحنة'))) {
+            $latestOrders = Order::where('representative_id', $representative->id)
+                ->latest()
+                ->limit(3)
+                ->get();
+            
+            if ($latestOrders->isNotEmpty()) {
+                $context .= "\nآخر طلبات المندوب:\n";
+                foreach ($latestOrders as $o) {
+                    $context .= "- رقم الطلب: {$o->id} | الزبون: {$o->customer_name} | الحالة: " . ($o->status ? $o->status->label() : 'غير معروف') . " | المبلغ: " . number_format($o->total_amount) . "\n";
+                }
+            }
+        }
+
+        $aiResponse = $this->gemini->chat($text, $context);
+        $this->telegram->sendMessage($chatId, $aiResponse);
     }
 
     protected function handlePhoneInput($chatId, $phone)

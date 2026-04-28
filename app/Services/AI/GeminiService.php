@@ -120,13 +120,48 @@ class GeminiService
     }
 
     /**
+     * General chat function for the bot
+     */
+    public function chat(string $userMessage, ?string $context = null): string
+    {
+        try {
+            $systemPrompt = "أنت مساعد ذكي لبوت تليجرام الخاص بمتجر (الجبل - Aljabal). متجر الجبل هو متجر كتب رائد في العراق.\n";
+            $systemPrompt .= "مهمتك هي مساعدة المناديب في الإجابة على استفساراتهم حول الكتب والطلبات.\n";
+            $systemPrompt .= "استخدم المعلومات التالية للإجابة بدقة (إذا توفرت):\n";
+            
+            if ($context) {
+                $systemPrompt .= "\n--- سياق المعلومات المتوفر من قاعدة البيانات ---\n";
+                $systemPrompt .= $context . "\n";
+                $systemPrompt .= "--- نهاية السياق ---\n\n";
+            }
+
+            $systemPrompt .= "قواعد الإجابة:\n";
+            $systemPrompt .= "1. كن ودوداً ومهنياً.\n";
+            $systemPrompt .= "2. إذا كان السؤال عن كتاب متوفر في السياق، اذكر تفاصيله (السعر، الكمية، المؤلف).\n";
+            $systemPrompt .= "3. إذا كان السؤال عن طلب، وضح حالته بناءً على البيانات.\n";
+            $systemPrompt .= "4. إذا لم تكن المعلومات متوفرة في السياق، اطلب من المندوب استخدام الأزرار المخصصة للبحث أو تزويدك بتفاصيل أكثر.\n";
+            $systemPrompt .= "5. أجب دائماً باللغة العربية.\n";
+
+            $fullPrompt = $systemPrompt . "\nرسالة المندوب: " . $userMessage;
+
+            Log::info('Calling Gemini Chat', ['message' => $userMessage]);
+
+            $response = Gemini::generativeModel(model: 'gemini-1.5-flash')->generateContent($fullPrompt);
+            return $response->text();
+        } catch (\Exception $e) {
+            Log::error('Gemini Chat Error: ' . $e->getMessage());
+            return "عذراً، واجهت مشكلة في معالجة طلبك ذكياً. هل يمكنك المحاولة مرة أخرى أو استخدام الأوامر المباشرة؟";
+        }
+    }
+
+    /**
      * Call Gemini API using the package
      */
     protected function callGeminiAPI(string $prompt): array
     {
         try {
-            // Use gemini-2.0-flash (free tier, recommended replacement for gemini-1.5-flash)
-            $response = Gemini::generativeModel(model: 'gemini-2.0-flash')->generateContent($prompt);
+            // Use gemini-1.5-flash as configured in .env
+            $response = Gemini::generativeModel(model: config('services.gemini.model', 'gemini-1.5-flash'))->generateContent($prompt);
 
             $text = $response->text();
 
