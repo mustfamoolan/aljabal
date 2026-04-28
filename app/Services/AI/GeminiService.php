@@ -124,37 +124,54 @@ class GeminiService
      */
     public function chat(string $userMessage, ?string $context = null): string
     {
-        try {
-            $systemPrompt = "أنت (ai مارسلين - مساعد الذكي للتاجر)، المساعد الرسمي والذكي لمناديب متجر (الجبل - Aljabal) في العراق.\n";
-            $systemPrompt .= "شخصيتك: جاد، محترف، دقيق جداً في الأرقام، ومخلص لمصلحة التاجر والمندوب.\n";
-            $systemPrompt .= "مهمتك: الإجابة على استفسارات المناديب حول الكتب، الطلبات، والبيانات المالية (المبيعات والأرباح) بناءً على الأرقام الحقيقية المزودة لك.\n";
-            $systemPrompt .= "استخدم المعلومات التالية للإجابة بدقة (هذه البيانات سرية وتخص المندوب السائل فقط):\n";
-            
-            if ($context) {
-                $systemPrompt .= "\n--- سياق البيانات الحية من النظام ---\n";
-                $systemPrompt .= $context . "\n";
-                $systemPrompt .= "--- نهاية سياق البيانات ---\n\n";
+        $maxRetries = 2;
+        $retryCount = 0;
+
+        while ($retryCount <= $maxRetries) {
+            try {
+                $systemPrompt = "أنت (ai مارسلين - مساعد الذكي للتاجر)، المساعد الرسمي والذكي لمناديب متجر (الجبل - Aljabal) في العراق.\n";
+                $systemPrompt .= "شخصيتك: جاد، محترف، دقيق جداً في الأرقام، ومخلص لمصلحة التاجر والمندوب.\n";
+                $systemPrompt .= "مهمتك: الإجابة على استفسارات المناديب حول الكتب، الطلبات، والبيانات المالية (المبيعات والأرباح) بناءً على الأرقام الحقيقية المزودة لك.\n";
+                $systemPrompt .= "استخدم المعلومات التالية للإجابة بدقة (هذه البيانات سرية وتخص المندوب السائل فقط):\n";
+                
+                if ($context) {
+                    $systemPrompt .= "\n--- سياق البيانات الحية من النظام ---\n";
+                    $systemPrompt .= $context . "\n";
+                    $systemPrompt .= "--- نهاية سياق البيانات ---\n\n";
+                }
+
+                $systemPrompt .= "قواعد الإجابة الصارمة:\n";
+                $systemPrompt .= "1. الاسم: عرف نفسك دائماً بـ 'مارسلين' إذا سئلت عن هويتك.\n";
+                $systemPrompt .= "2. الأسلوب: تحدث بجدية واحترافية عالية. تجنب المزاح الزائد. كن مباشراً وواضحاً.\n";
+                $systemPrompt .= "3. الدقة المالية: عند السؤال عن الأرباح أو المبيعات أو الرصيد، استخدم الأرقام الدقيقة من السياق. لا تخمن أبداً.\n";
+                $systemPrompt .= "4. البحث عن الكتب: إذا وجد المندوب صعوبة في البحث، استخدم قائمة الكتب المقترحة في السياق ووجهه للأفضل.\n";
+                $systemPrompt .= "5. الموثوقية: أنت تمثل عقل المتجر المدبر، كن واثقاً في إجاباتك بناءً على البيانات.\n";
+                $systemPrompt .= "6. اللغة: العربية الفصحى الممزوجة بلهجة عراقية مهذبة وجادة.\n";
+
+                $fullPrompt = $systemPrompt . "\nرسالة المندوب: " . $userMessage;
+
+                Log::info('Calling Gemini Chat', ['message' => $userMessage, 'retry' => $retryCount]);
+
+                $model = config('services.gemini.model', 'gemini-flash-latest');
+                $response = Gemini::generativeModel(model: $model)->generateContent($fullPrompt);
+                return $response->text();
+            } catch (\Exception $e) {
+                // If it's a rate limit error (Quota exceeded), wait and retry
+                if (str_contains(strtolower($e->getMessage()), 'quota') || str_contains($e->getMessage(), '429')) {
+                    $retryCount++;
+                    if ($retryCount <= $maxRetries) {
+                        Log::warning("Gemini Rate Limit hit, retrying in 2 seconds... (Attempt $retryCount)");
+                        sleep(2); // Wait 2 seconds before retry
+                        continue;
+                    }
+                }
+                
+                Log::error('Gemini Chat Error: ' . $e->getMessage());
+                return "عذراً، مارسلين يواجه ضغطاً في الطلبات حالياً. يرجى الانتظار دقيقة واحدة والمحاولة مجدداً.";
             }
-
-            $systemPrompt .= "قواعد الإجابة الصارمة:\n";
-            $systemPrompt .= "1. الاسم: عرف نفسك دائماً بـ 'مارسلين' إذا سئلت عن هويتك.\n";
-            $systemPrompt .= "2. الأسلوب: تحدث بجدية واحترافية عالية. تجنب المزاح الزائد. كن مباشراً وواضحاً.\n";
-            $systemPrompt .= "3. الدقة المالية: عند السؤال عن الأرباح أو المبيعات أو الرصيد، استخدم الأرقام الدقيقة من السياق. لا تخمن أبداً.\n";
-            $systemPrompt .= "4. البحث عن الكتب: إذا وجد المندوب صعوبة في البحث، استخدم قائمة الكتب المقترحة في السياق ووجهه للأفضل.\n";
-            $systemPrompt .= "5. الموثوقية: أنت تمثل عقل المتجر المدبر، كن واثقاً في إجاباتك بناءً على البيانات.\n";
-            $systemPrompt .= "6. اللغة: العربية الفصحى الممزوجة بلهجة عراقية مهذبة وجادة.\n";
-
-            $fullPrompt = $systemPrompt . "\nرسالة المندوب: " . $userMessage;
-
-            Log::info('Calling Gemini Chat', ['message' => $userMessage]);
-
-            $model = config('services.gemini.model', 'gemini-flash-latest');
-            $response = Gemini::generativeModel(model: $model)->generateContent($fullPrompt);
-            return $response->text();
-        } catch (\Exception $e) {
-            Log::error('Gemini Chat Error: ' . $e->getMessage());
-            return "عذراً، واجهت مشكلة في معالجة طلبك ذكياً. هل يمكنك المحاولة مرة أخرى أو استخدام الأوامر المباشرة؟";
         }
+        
+        return "عذراً، واجهت مشكلة في معالجة طلبك ذكياً. هل يمكنك المحاولة مرة أخرى؟";
     }
 
     /**
