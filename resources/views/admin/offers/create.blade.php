@@ -40,6 +40,12 @@
                             @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
+                        <div class="col-md-6 mb-3">
+                            <label for="gallery_images" class="form-label">صور إضافية خاصة بصفحة العرض (متعدد)</label>
+                            <input type="file" class="form-control @error('gallery_images') is-invalid @enderror" id="gallery_images" name="gallery_images[]" accept="image/*" multiple>
+                            @error('gallery_images')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
                         <div class="col-md-3 mb-3">
                             <label for="order" class="form-label">الترتيب</label>
                             <input type="number" class="form-control @error('order') is-invalid @enderror" id="order" name="order" value="{{ old('order', 0) }}">

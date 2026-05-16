@@ -33,6 +33,8 @@ class OfferController extends Controller
             'order' => 'integer|min:0',
             'is_active' => 'boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id'
         ]);
@@ -51,6 +53,16 @@ class OfferController extends Controller
 
         $offer->save();
 
+        if ($request->hasFile('gallery_images')) {
+            foreach ($request->file('gallery_images') as $index => $file) {
+                $path = $file->store('offers/gallery', 'public');
+                $offer->images()->create([
+                    'image_path' => $path,
+                    'image_order' => $index
+                ]);
+            }
+        }
+
         if (isset($validated['product_ids'])) {
             $offer->products()->sync($validated['product_ids']);
         }
@@ -66,9 +78,6 @@ class OfferController extends Controller
                 ]
             ];
 
-            // Send via Firebase logic
-            // Since this is existing code base, let's use the AdminNotificationController approach or similar
-            // Assuming there is a way to send to all representatives topic
             \App\Services\FcmService::sendToTopic('representatives', $notificationData['title'], $notificationData['body'], $notificationData['data']);
         } catch (\Exception $e) {
             \Log::error('Firebase Offer Notification Error: ' . $e->getMessage());
@@ -80,7 +89,7 @@ class OfferController extends Controller
     public function edit(Offer $offer)
     {
         $products = Product::where('is_active', true)->select('id', 'name', 'author', 'publisher')->get();
-        $offer->load('products');
+        $offer->load(['products', 'images']);
         return view('admin.offers.edit', compact('offer', 'products'));
     }
 
@@ -93,6 +102,9 @@ class OfferController extends Controller
             'order' => 'integer|min:0',
             'is_active' => 'boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'gallery_images' => 'nullable|array',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
+            'delete_images' => 'nullable|array',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id'
         ]);
@@ -113,6 +125,27 @@ class OfferController extends Controller
 
         $offer->save();
 
+        if ($request->has('delete_images')) {
+            foreach ($request->delete_images as $imageId) {
+                $image = $offer->images()->find($imageId);
+                if ($image) {
+                    Storage::disk('public')->delete($image->image_path);
+                    $image->delete();
+                }
+            }
+        }
+
+        if ($request->hasFile('gallery_images')) {
+            $currentCount = $offer->images()->count();
+            foreach ($request->file('gallery_images') as $index => $file) {
+                $path = $file->store('offers/gallery', 'public');
+                $offer->images()->create([
+                    'image_path' => $path,
+                    'image_order' => $currentCount + $index
+                ]);
+            }
+        }
+
         if (isset($validated['product_ids'])) {
             $offer->products()->sync($validated['product_ids']);
         } else {
@@ -124,6 +157,9 @@ class OfferController extends Controller
 
     public function destroy(Offer $offer)
     {
+        foreach ($offer->images as $image) {
+            Storage::disk('public')->delete($image->image_path);
+        }
         if ($offer->image_path) {
             Storage::disk('public')->delete($offer->image_path);
         }

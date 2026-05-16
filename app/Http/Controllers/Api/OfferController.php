@@ -11,7 +11,7 @@ class OfferController extends Controller
     public function index()
     {
         $offers = Offer::where('is_active', true)
-            ->with(['products' => function($query) {
+            ->with(['images', 'products' => function($query) {
                 $query->where('is_active', true)
                       ->select('products.id', 'products.name', 'products.short_description', 'products.retail_price', 'products.quantity', 'products.author', 'products.publisher')
                       ->with('images');
@@ -27,6 +27,10 @@ class OfferController extends Controller
             } else {
                 $offer->image_url = null;
             }
+
+            $offer->gallery_images = $offer->images->map(function ($image) {
+                return $image->image_url;
+            })->filter()->values();
             
             // Format products' images to include 'url' for Flutter
             if ($offer->products) {

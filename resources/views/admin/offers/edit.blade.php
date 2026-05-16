@@ -46,6 +46,25 @@
                             @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
+                        <div class="col-md-6 mb-3">
+                            <label for="gallery_images" class="form-label">صور إضافية خاصة بصفحة العرض (متعدد)</label>
+                            <input type="file" class="form-control @error('gallery_images') is-invalid @enderror" id="gallery_images" name="gallery_images[]" accept="image/*" multiple>
+                            @if($offer->images && $offer->images->count() > 0)
+                                <div class="mt-2 d-flex flex-wrap gap-2">
+                                    @foreach($offer->images as $img)
+                                        <div class="position-relative border p-1 rounded">
+                                            <img src="{{ Storage::url($img->image_path) }}" alt="Gallery Image" height="60">
+                                            <div class="form-check mt-1">
+                                                <input class="form-check-input" type="checkbox" name="delete_images[]" value="{{ $img->id }}" id="del_img_{{ $img->id }}">
+                                                <label class="form-check-label text-danger" for="del_img_{{ $img->id }}">حذف</label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                            @error('gallery_images')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
                         <div class="col-md-3 mb-3">
                             <label for="order" class="form-label">الترتيب</label>
                             <input type="number" class="form-control @error('order') is-invalid @enderror" id="order" name="order" value="{{ old('order', $offer->order) }}">
