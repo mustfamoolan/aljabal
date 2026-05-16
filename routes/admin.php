@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\WithdrawalRequestController;
 use App\Http\Controllers\Admin\WithdrawalSettingsController;
 use App\Http\Controllers\Admin\ExpenseController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\OfferController;
 use App\Http\Controllers\Inventory\CategoryController;
 use App\Http\Controllers\Inventory\ProductController;
 use App\Http\Controllers\Inventory\SupplierController;
@@ -153,6 +154,16 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::get('/{order}/edit', [OrderController::class, 'edit'])->name('edit');
         Route::put('/{order}', [OrderController::class, 'update'])->name('update');
     });
+
+    // Offers & Banners
+    Route::resource('offers', OfferController::class)->names([
+        'index' => 'admin.offers.index',
+        'create' => 'admin.offers.create',
+        'store' => 'admin.offers.store',
+        'edit' => 'admin.offers.edit',
+        'update' => 'admin.offers.update',
+        'destroy' => 'admin.offers.destroy',
+    ]);
 
     // Tags Management
     Route::resource('tags', \App\Http\Controllers\Admin\TagController::class)->names([

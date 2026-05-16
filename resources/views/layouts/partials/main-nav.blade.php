@@ -103,6 +103,15 @@
                 </li>
                 
                 <li class="nav-item">
+                    <a class="nav-link" href="{{ route('admin.offers.index') }}">
+                        <span class="nav-icon">
+                            <iconify-icon icon="solar:gallery-wide-bold-duotone"></iconify-icon>
+                        </span>
+                        <span class="nav-text"> العروض والبنرات </span>
+                    </a>
+                </li>
+                
+                <li class="nav-item">
                     <a class="nav-link" href="{{ route('admin.settings.gateway.index') }}">
                         <span class="nav-icon">
                             <iconify-icon icon="solar:round-transfer-horizontal-bold-duotone"></iconify-icon>

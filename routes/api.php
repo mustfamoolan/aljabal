@@ -189,6 +189,9 @@ Route::prefix('representative')->group(function () {
         Route::get('/products/{product}/recommendations', [\App\Http\Controllers\Api\Inventory\ProductController::class, 'recommendations']);
         Route::get('/categories', [\App\Http\Controllers\Api\Inventory\CategoryController::class, 'index']);
 
+        // Offers for representatives
+        Route::get('/offers', [\App\Http\Controllers\Api\OfferController::class, 'index']);
+
         // Orders routes for representatives
         Route::get('/statistics', [\App\Http\Controllers\Api\Representatives\OrderController::class, 'statistics']);
         Route::get('/activities', [\App\Http\Controllers\Api\Representatives\OrderController::class, 'activities']);
