@@ -13,7 +13,7 @@ class OfferController extends Controller
         $offers = Offer::where('is_active', true)
             ->with(['products' => function($query) {
                 $query->where('is_active', true)
-                      ->select('products.id', 'products.name', 'products.description', 'products.price', 'products.stock', 'products.author', 'products.publisher')
+                      ->select('products.id', 'products.name', 'products.short_description', 'products.retail_price', 'products.quantity', 'products.author', 'products.publisher')
                       ->with('images');
             }])
             ->orderBy('order')
