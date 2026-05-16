@@ -27,6 +27,21 @@ class OfferController extends Controller
             } else {
                 $offer->image_url = null;
             }
+            
+            // Format products' images to include 'url' for Flutter
+            if ($offer->products) {
+                $offer->products->transform(function ($product) {
+                    if ($product->images) {
+                        $product->images->transform(function ($image) {
+                            // $image->image_url is the accessor from ProductImage model
+                            $image->url = $image->image_url;
+                            return $image;
+                        });
+                    }
+                    return $product;
+                });
+            }
+            
             return $offer;
         });
 
