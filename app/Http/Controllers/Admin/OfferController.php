@@ -69,17 +69,8 @@ class OfferController extends Controller
 
         // Send Firebase Notification
         try {
-            $notificationData = [
-                'title' => 'عرض جديد متاح الآن! 🎉',
-                'body' => 'لا تفوت: ' . $offer->title,
-                'data' => [
-                    'type' => 'offer',
-                    'offer_id' => (string) $offer->id,
-                ]
-            ];
-
-            \App\Services\FcmService::sendToTopic('representatives', $notificationData['title'], $notificationData['body'], $notificationData['data']);
-        } catch (\Exception $e) {
+            app(\App\Services\Notifications\NotificationService::class)->sendNewOfferNotification($offer);
+        } catch (\Throwable $e) {
             \Log::error('Firebase Offer Notification Error: ' . $e->getMessage());
         }
 

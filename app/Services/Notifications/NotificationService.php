@@ -597,6 +597,42 @@ class NotificationService
         }
     }
 
+    public function sendNewOfferNotification(\App\Models\Offer $offer): void
+    {
+        try {
+            $representatives = Representative::where('is_active', true)->get();
+            $title = 'عرض جديد متاح الآن! 🎉';
+            $body = 'لا تفوت: ' . $offer->title;
+            $notification = new CustomAdminNotification($title, $body, [
+                'type' => 'offer',
+                'offer_id' => (string) $offer->id,
+            ]);
+
+            foreach ($representatives as $rep) {
+                // Save to database
+                $this->saveNotificationToDatabase($rep, [
+                    'type' => 'offer',
+                    'title' => $title,
+                    'body' => $body,
+                    'data' => ['type' => 'offer', 'offer_id' => (string) $offer->id],
+                ]);
+
+                // Attempt FCM
+                try {
+                    $rep->notify($notification);
+                } catch (\Exception $e) {
+                    Log::error('FCM Error (NewOffer): ' . $e->getMessage());
+                }
+            }
+            Log::info('New offer notifications processed', [
+                'offer_id' => $offer->id,
+                'count' => $representatives->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to process new offer notification', ['offer_id' => $offer->id, 'error' => $e->getMessage()]);
+        }
+    }
+
     public function sendProductPriceDiscountNotification(Product $product, float $oldPrice, float $newPrice): void
     {
         try {
